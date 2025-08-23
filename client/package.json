@@ -1,0 +1,49 @@
+{
+  "name": "todo-list-client",
+  "private": true,
+  "version": "0.1.0",
+  "main": "dist/main/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "concurrently -k \"npm:server\" \"npm:tsc:watch\" \"npm:build:renderer:watch\" \"npm:copy:index:watch\" \"npm:electron\"",
+    "server": "cd ../server && npm run dev",
+    "build": "tsc -p tsconfig.json && npm run build:renderer && npm run copy:index",
+    "tsc:watch": "tsc -w -p tsconfig.json",
+    "build:renderer": "esbuild src/renderer/main.tsx --bundle --outfile=dist/renderer/bundle.js --format=iife --platform=browser",
+    "build:renderer:watch": "esbuild src/renderer/main.tsx --bundle --outfile=dist/renderer/bundle.js --format=iife --platform=browser --watch",
+    "copy:index": "cpx \"src/renderer/index.html\" dist/renderer",
+    "copy:index:watch": "cpx \"src/renderer/index.html\" dist/renderer -w",
+    "electron": "electron dist/main/main.js",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "electron": "^31.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.25.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.12",
+    "@types/react": "^18.2.74",
+    "@types/react-dom": "^18.3.0",
+    "concurrently": "^8.2.2",
+    "cpx": "^1.5.0",
+  "esbuild": "^0.21.5",
+  "jest": "^29.7.0",
+  "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "testMatch": [
+  "**/tests/**/*.test.ts?(x)"
+    ],
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"]
+  }
+}
