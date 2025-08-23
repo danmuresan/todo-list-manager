@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getDefaultConfig } from '../app-configs';
 
-const apiBase = 'http://localhost:4000';
-
+const apiBase = getDefaultConfig().todoListService.host;
 type Todo = { id: string; listId: string; title: string; state: 'TODO'|'ONGOING'|'DONE' };
 type List = { id: string; name: string; key: string };
 
@@ -16,7 +16,9 @@ export default function Home() {
 
   useEffect(() => {
     const token = getToken();
-    if (!token) navigate('/');
+    if (!token) {
+      navigate('/');
+    }
     (async () => {
       const l = await ensureList();
       if (l) {
@@ -28,9 +30,13 @@ export default function Home() {
   }, [navigate]);
 
   useEffect(() => {
-    if (!list) return;
+    if (!list) {
+      return;
+    }
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     const es = new EventSource(`${apiBase}/lists/${list.id}/stream?token=${encodeURIComponent(token)}`);
     const reload = async () => {
       const data = await fetch(`${apiBase}/todos/${list.id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
@@ -45,9 +51,14 @@ export default function Home() {
   const token = useMemo(() => getToken(), [list]);
 
   async function ensureList(): Promise<List | null> {
-    const token = getToken(); if (!token) return null;
+    const token = getToken();
+    if (!token) {
+      return null;
+    }
     const lists: List[] = await fetch(`${apiBase}/lists`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
-    if (lists.length > 0) return lists[0];
+    if (lists.length > 0) {
+      return lists[0];
+    }
     return await fetch(`${apiBase}/lists`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: 'My List' })
     }).then(r => r.json());
@@ -55,7 +66,9 @@ export default function Home() {
 
   async function addTodo(e: React.FormEvent) {
     e.preventDefault();
-    if (!list || !token || !title.trim()) return;
+    if (!list || !token || !title.trim()) {
+      return;
+    }
     await fetch(`${apiBase}/todos/${list.id}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title })
     });
@@ -63,12 +76,16 @@ export default function Home() {
   }
 
   async function delTodo(t: Todo) {
-    if (!list || !token) return;
+    if (!list || !token) {
+      return;
+    }
     await fetch(`${apiBase}/todos/${list.id}/${t.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
   }
 
   async function transition(t: Todo, direction: 'forward'|'back') {
-    if (!list || !token) return;
+    if (!list || !token) {
+      return;
+    }
     await fetch(`${apiBase}/todos/${list.id}/${t.id}/transition`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ direction }) });
   }
 

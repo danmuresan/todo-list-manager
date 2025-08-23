@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app';
 import { resetDB } from '../src/storage';
@@ -83,6 +84,6 @@ describe('Lists and Todos', () => {
       .get(`/todos/${listId}`)
       .set('Authorization', `Bearer ${token}`);
     expect(listTodos.status).toBe(200);
-    expect(listTodos.body.find((t: any) => t.id === todoId)).toBeUndefined();
+  expect(listTodos.body.find((t: { id: string }) => t.id === todoId)).toBeUndefined();
   });
 });

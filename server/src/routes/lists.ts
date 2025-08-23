@@ -7,11 +7,15 @@ import { broadcast, subscribe } from '../sse';
 const router = Router();
 
 // Attach auth middleware for all list routes
-router.use((req, res, next) => authMiddleware(req as Request & { user?: JwtPayload }, res, next));
+router.use((req, res, next) => {
+  authMiddleware(req as Request & { user?: JwtPayload }, res, next);
+});
 
 router.post('/', (req: Request & { user?: JwtPayload }, res: Response) => {
   const { name } = (req.body || {}) as { name?: string };
-  if (!name) return res.status(400).json({ error: 'Name required' });
+  if (!name) {
+    return res.status(400).json({ error: 'Name required' });
+  }
   const id = newId();
   const key = newKey(10);
   const userId = req.user!.id;
@@ -29,10 +33,14 @@ router.post('/join', (req: Request & { user?: JwtPayload }, res: Response) => {
   const userId = req.user!.id;
   const db = getDB();
   const list = db.lists.find(l => l.key === key);
-  if (!list) return res.status(404).json({ error: 'List not found' });
+  if (!list) {
+    return res.status(404).json({ error: 'List not found' });
+  }
   saveDB((data) => {
     const l = data.lists.find(ll => ll.id === list.id)!;
-    if (!l.members.includes(userId)) l.members.push(userId);
+    if (!l.members.includes(userId)) {
+      l.members.push(userId);
+    }
     return data;
   });
   broadcast(list.id, 'memberJoined', { userId });
@@ -51,14 +59,18 @@ router.get('/:listId/stream', (req: Request & { user?: JwtPayload }, res: Respon
   const userId = req.user!.id;
   const db = getDB();
   const list = db.lists.find(l => l.id === listId);
-  if (!list) return res.status(404).json({ error: 'List not found' });
-  if (!list.members.includes(userId)) return res.status(403).json({ error: 'Forbidden' });
+  if (!list) {
+    return res.status(404).json({ error: 'List not found' });
+  }
+  if (!list.members.includes(userId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  // @ts-ignore flushHeaders may not exist on minimal Response type
-  (res as any).flushHeaders?.();
+  const maybeFlusher = res as unknown as { flushHeaders?: () => void };
+  maybeFlusher.flushHeaders?.();
 
   subscribe(listId, res);
 });

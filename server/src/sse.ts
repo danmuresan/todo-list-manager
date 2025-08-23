@@ -5,7 +5,9 @@ type SSEClient = Response;
 const clientsByList: Map<string, Set<SSEClient>> = new Map();
 
 export function subscribe(listId: string, res: SSEClient) {
-  if (!clientsByList.has(listId)) clientsByList.set(listId, new Set());
+  if (!clientsByList.has(listId)) {
+    clientsByList.set(listId, new Set());
+  }
   const set = clientsByList.get(listId)!;
   set.add(res);
 
@@ -23,13 +25,17 @@ export function subscribe(listId: string, res: SSEClient) {
   res.on('close', () => {
     clearInterval(ping);
     set.delete(res);
-    if (set.size === 0) clientsByList.delete(listId);
+    if (set.size === 0) {
+      clientsByList.delete(listId);
+    }
   });
 }
 
 export function broadcast(listId: string, event: string, payload?: unknown) {
   const set = clientsByList.get(listId);
-  if (!set || set.size === 0) return;
+  if (!set || set.size === 0) {
+    return;
+  }
   const data = JSON.stringify(payload ?? {});
   for (const res of set) {
     try {

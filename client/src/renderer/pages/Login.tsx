@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getDefaultConfig } from '../app-configs';
 
 declare global {
   interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
 }
 
-const apiBase = 'http://localhost:4000';
+const apiBase = getDefaultConfig().todoListService.host;
 
 export default function Login() {
   const [username, setUsername] = useState('');
