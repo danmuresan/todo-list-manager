@@ -8,15 +8,15 @@ type ExposedAPI = RendererAPI<RendererToMainAsync> & {
 };
 
 const api: ExposedAPI = {
-  setupMainWindowBoundsForLogin: () => ipcRenderer.send(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin),
-  loginWindowCompleted: () => ipcRenderer.send(Channels.rendererToMainAsync.loginWindowCompleted),
-  on: (channel, listener) => {
-    const wrapped = (_ev: IpcRendererEvent, payload: unknown) => {
-      listener(payload as any);
-    };
-    ipcRenderer.on(channel as string, wrapped);
-    return () => ipcRenderer.removeListener(channel as string, wrapped);
-  }
+    setupMainWindowBoundsForLogin: () => ipcRenderer.send(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin),
+    loginWindowCompleted: () => ipcRenderer.send(Channels.rendererToMainAsync.loginWindowCompleted),
+    on: (channel, listener) => {
+        const wrapped = (_ev: IpcRendererEvent, payload: unknown) => {
+            listener(payload as MainToRenderer[typeof channel]);
+        };
+        ipcRenderer.on(channel as string, wrapped);
+        return () => ipcRenderer.removeListener(channel as string, wrapped);
+    }
 };
 
 contextBridge.exposeInMainWorld('electronAPI', api);

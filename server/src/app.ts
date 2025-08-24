@@ -1,19 +1,20 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import authRouter from './routes/auth';
-import listsRouter from './routes/lists';
-import todosRouter from './routes/todos';
+import { container } from './di/container';
+import createAuthRouter from './routes/auth';
+import createListsRouter from './routes/lists';
+import createTodosRouter from './routes/todos';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ ok: true });
+app.get('/health', (_req: Request, res: Response): Response => {
+    return res.json({ ok: true });
 });
 
-app.use('/auth', authRouter);
-app.use('/lists', listsRouter);
-app.use('/todos', todosRouter);
+app.use('/auth', createAuthRouter());
+app.use('/lists', createListsRouter(container));
+app.use('/todos', createTodosRouter(container));
 
 export default app;

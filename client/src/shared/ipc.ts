@@ -49,11 +49,11 @@ export interface MainToRenderer {
 }
 
 // Utility mapped types
-export type RendererAPI<M extends Record<string, any>> = {
+export type RendererAPI<M extends Record<string, unknown>> = {
   [K in keyof M]: M[K] extends void ? () => void : (payload: M[K]) => void;
 };
 
-export type RendererInvokeAPI<M extends Record<string, { request: any; response: any }>> = {
+export type RendererInvokeAPI<M extends Record<string, { request: unknown; response: unknown }>> = {
   [K in keyof M]: (payload: M[K]['request']) => Promise<M[K]['response']>;
 };
 
@@ -64,17 +64,17 @@ export type RendererInvokeAPI<M extends Record<string, { request: any; response:
  * Consumers should import and use these instead of raw strings.
  */
 export const Channels = {
-  rendererToMainAsync: {
-    setupMainWindowBoundsForLogin: 'setupMainWindowBoundsForLogin',
-    loginWindowCompleted: 'loginWindowCompleted'
+    rendererToMainAsync: {
+        setupMainWindowBoundsForLogin: 'setupMainWindowBoundsForLogin',
+        loginWindowCompleted: 'loginWindowCompleted'
     // createList: 'createList'
-  },
-  renderToMainPromise: {
+    },
+    renderToMainPromise: {
     // getVersion: 'getVersion'
-  },
-  mainToRenderer: {
+    },
+    mainToRenderer: {
     // showNotification: 'showNotification'
-  }
+    }
 } as const satisfies {
   rendererToMainAsync: Record<keyof RendererToMainAsync, string>;
   renderToMainPromise: Record<keyof RenderToMainPromise, string>;

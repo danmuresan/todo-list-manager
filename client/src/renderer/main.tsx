@@ -7,11 +7,11 @@ import Home from './pages/Home';
 import Todo from './pages/Todo';
 
 const router = createHashRouter([
-  { path: '/', element: <Login /> },
-  { path: '/register', element: <Register /> },
-  { path: '/home', element: <Home /> },
-  { path: '/todo/:listId/:todoId', element: <Todo /> }
+    { path: '/', element: <Login /> },
+    { path: '/register', element: <Register /> },
+    { path: '/home', element: <Home /> },
+    { path: '/todo/:listId/:todoId', element: <Todo /> }
 ]);
 
 createRoot(document.getElementById('root')!)
-  .render(<RouterProvider router={router} />);
+    .render(<RouterProvider router={router} />);

@@ -11,6 +11,6 @@
   "skipLibCheck": true,
   "types": ["node", "jest"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/services/storage-service.ts", "tests/helpers/storage-utils.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }
