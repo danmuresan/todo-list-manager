@@ -3,7 +3,7 @@ import request from 'supertest';
 import app from '../src/app';
 import { resetDB } from './helpers/storage-utils';
 
-describe('Auth', () => {
+describe('Auth tests', () => {
     beforeEach(() => resetDB());
 
     test('register and authorize', async () => {
@@ -18,7 +18,7 @@ describe('Auth', () => {
     });
 });
 
-describe('Lists and Todos', () => {
+describe('Lists and Todos tests', () => {
     beforeEach(() => resetDB());
 
     test('create list, create todo, transition', async () => {
@@ -44,14 +44,14 @@ describe('Lists and Todos', () => {
         const fwd = await request(app)
             .post(`/todos/${listId}/${todoId}/transition`)
             .set('Authorization', `Bearer ${token}`)
-            .send({ direction: 'forward' });
+            .send({ transitionItem: 'next' });
         expect(fwd.status).toBe(200);
         expect(fwd.body.state).toBe('ONGOING');
 
         const back = await request(app)
             .post(`/todos/${listId}/${todoId}/transition`)
             .set('Authorization', `Bearer ${token}`)
-            .send({ direction: 'back' });
+            .send({ transitionItem: 'previous' });
         expect(back.status).toBe(200);
         expect(back.body.state).toBe('TODO');
     });

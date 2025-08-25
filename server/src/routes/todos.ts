@@ -14,18 +14,14 @@ import type {
     DeleteTodoResponse,
 } from '../models/http/todo-items';
 
-/**
- * Creates routes for managing todo items.
- * @param deps service dependencies.
- */
-export default function createTodoItemRouter(deps: AppDependencies): ExpressRouter {
+export default function createTodosRouter(services: AppDependencies): ExpressRouter {
     const router = Router();
 
     /**
-     * Type-safe transition table between todo states.
-     * - next: move to the next state
-     * - previous: move to the previous state
-     */
+	 * Type-safe transition table between todo states.
+	 * - forward: next state when moving forward
+	 * - back: previous state when moving back
+	 */
     const TRANSITIONS: Readonly<Record<TodoItemState, TodoItemStateTransition>> = {
         [TodoItemState.ToDo]: { nextState: TodoItemState.Ongoing },
         [TodoItemState.Ongoing]: { nextState: TodoItemState.Done, previousState: TodoItemState.ToDo },
@@ -43,7 +39,7 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
         return !!list && list.members.includes(userId);
     }
 
-    const auth = createAuthMiddleware(deps.logger);
+    const auth = createAuthMiddleware(services.logger);
     router.use((req, res, next): void => {
         auth(req as Request & { user?: JwtPayload }, res, next);
     });
@@ -51,10 +47,10 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
     router.get('/:listId', (req: Request & { user?: JwtPayload }, res: Response<GetTodosResponse>): Response => {
         const { listId } = req.params;
         const userId = req.user!.id;
-        if (!isMember(listId, userId, deps)) {
+        if (!isMember(listId, userId, services)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
-        const db = deps.storage.getStorageData();
+        const db = services.storage.getStorageData();
         const todos = db.todos.filter(t => t.listId === listId);
         return res.json(todos);
     });
@@ -66,25 +62,25 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
         if (!title) {
             return res.status(400).json({ error: 'Title required' });
         }
-        if (!isMember(listId, userId, deps)) {
+        if (!isMember(listId, userId, services)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
         const id = newId();
         const now = new Date().toISOString();
         const todo: TodoItem = { id, listId, title, state: TodoItemState.ToDo, createdBy: userId, updatedAt: now };
-        deps.storage.updateStorageData((data) => {
+        services.storage.updateStorageData((data) => {
             data.todos.push(todo);
             return data;
         });
-        deps.sse.broadcast(listId, 'todoCreated', { todo });
+        services.sse.broadcast(listId, 'todoCreated', { todo });
         return res.status(201).json(todo);
     });
 
     router.post('/:listId/:todoId/transition', (req: Request & { user?: JwtPayload }, res: Response<TransitionTodoItemResponse>): Response => {
         const { listId, todoId } = req.params;
-    const { transitionItem } = (req.body || {}) as TransitionTodoItemStateRequestPayload;
+        const { transitionItem } = (req.body || {}) as TransitionTodoItemStateRequestPayload;
         const userId = req.user!.id;
-        if (!isMember(listId, userId, deps)) {
+        if (!isMember(listId, userId, services)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
         if (!transitionItem || !['next', 'previous'].includes(transitionItem)) {
@@ -93,7 +89,7 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
 
         let updated: TodoItem | undefined;
         try {
-            deps.storage.updateStorageData((data) => {
+            services.storage.updateStorageData((data) => {
                 const todo = data.todos.find(t => t.id === todoId && t.listId === listId);
                 if (!todo) {
                     throw new Error('NotFound');
@@ -122,19 +118,19 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
         if (!updated) {
             return res.status(404).json({ error: 'Todo not found' });
         }
-        deps.sse.broadcast(listId, 'todoUpdated', { todo: updated });
+        services.sse.broadcast(listId, 'todoUpdated', { todo: updated });
         return res.json(updated);
     });
 
     router.delete('/:listId/:todoId', (req: Request & { user?: JwtPayload }, res: Response<DeleteTodoResponse>): Response => {
         const { listId, todoId } = req.params;
         const userId = req.user!.id;
-        if (!isMember(listId, userId, deps)) {
+        if (!isMember(listId, userId, services)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
         let removed = false;
-        deps.storage.updateStorageData((data) => {
+        services.storage.updateStorageData((data) => {
             const idx = data.todos.findIndex(t => t.id === todoId && t.listId === listId);
             if (idx === -1) {
                 return data;
@@ -147,7 +143,7 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
         if (!removed) {
             return res.status(404).json({ error: 'Todo not found' });
         }
-        deps.sse.broadcast(listId, 'todoDeleted', { todoId });
+        services.sse.broadcast(listId, 'todoDeleted', { todoId });
         return res.status(204).send();
     });
 

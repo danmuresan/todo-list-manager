@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { newId, newKey } from '../helpers/id-generator-helper';
 import { createAuthMiddleware, JwtPayload } from '../auth';
 import type { AppDependencies } from '../di/di-container';
-import type { CreateListRequestPayload, CreateListResponse, JoinListRequestPayload, JoinListResponse, GetListsResponse } from '../models/http/lists';
+import type { CreateTodoListRequestPayload, CreateTodoListResponse, JoinTodoListRequestPayload, JoinTodoListResponse, GetAllTodoListsResponse } from '../models/http/todo-lists';
 
 /**
  * Creates routes for managing todo lists.
@@ -17,8 +17,8 @@ export default function createTodoListsManagementRouter(deps: AppDependencies): 
         auth(req as Request & { user?: JwtPayload }, res, next);
     });
 
-    router.post('/', (req: Request & { user?: JwtPayload }, res: Response<CreateListResponse>): Response => {
-        const { name } = (req.body || {}) as CreateListRequestPayload;
+    router.post('/', (req: Request & { user?: JwtPayload }, res: Response<CreateTodoListResponse>): Response => {
+        const { name } = (req.body || {}) as CreateTodoListRequestPayload;
         if (!name) {
             return res.status(400).json({ error: 'Name required' });
         }
@@ -34,8 +34,8 @@ export default function createTodoListsManagementRouter(deps: AppDependencies): 
         return res.status(201).json(list);
     });
 
-    router.post('/join', (req: Request & { user?: JwtPayload }, res: Response<JoinListResponse>): Response => {
-        const { key } = (req.body || {}) as JoinListRequestPayload;
+    router.post('/join', (req: Request & { user?: JwtPayload }, res: Response<JoinTodoListResponse>): Response => {
+        const { key } = (req.body || {}) as JoinTodoListRequestPayload;
         const userId = req.user!.id;
         const db = deps.storage.getStorageData();
         const list = db.lists.find(l => l.key === key);
@@ -53,7 +53,7 @@ export default function createTodoListsManagementRouter(deps: AppDependencies): 
         return res.json({ id: list.id, name: list.name, key: list.key });
     });
 
-    router.get('/', (req: Request & { user?: JwtPayload }, res: Response<GetListsResponse>): Response => {
+    router.get('/', (req: Request & { user?: JwtPayload }, res: Response<GetAllTodoListsResponse>): Response => {
         const userId = req.user!.id;
         const db = deps.storage.getStorageData();
         const lists = db.lists.filter(l => l.members.includes(userId));

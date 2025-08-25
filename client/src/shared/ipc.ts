@@ -48,13 +48,27 @@ export interface MainToRenderer {
   // showNotification: { message: string };
 }
 
+// Utility helpers to keep mapped types readable
+// SendFn<void> => () => void
+// SendFn<{ x: number }> => (payload: { x: number }) => void
+type SendFn<T> = T extends void ? () => void : (payload: T) => void;
+
+// InvokeFnFor<{ request: R; response: S }> => (payload: R) => Promise<S>
+type InvokeFnFor<T> = T extends { request: infer R; response: infer S }
+  ? (payload: R) => Promise<S>
+  : never;
+
 // Utility mapped types
+// Example: RendererAPI<{ ping: void; create: { name: string } }>
+// becomes: { ping: () => void; create: (payload: { name: string }) => void }
 export type RendererAPI<M extends Record<string, unknown>> = {
-  [K in keyof M]: M[K] extends void ? () => void : (payload: M[K]) => void;
+  [K in keyof M]: SendFn<M[K]>;
 };
 
+// Example: RendererInvokeAPI<{ getVersion: { request: void; response: string } }>
+// becomes: { getVersion: () => Promise<string> }
 export type RendererInvokeAPI<M extends Record<string, { request: unknown; response: unknown }>> = {
-  [K in keyof M]: (payload: M[K]['request']) => Promise<M[K]['response']>;
+  [K in keyof M]: InvokeFnFor<M[K]>;
 };
 
 /**
@@ -67,13 +81,13 @@ export const Channels = {
     rendererToMainAsync: {
         setupMainWindowBoundsForLogin: 'setupMainWindowBoundsForLogin',
         loginWindowCompleted: 'loginWindowCompleted'
-    // createList: 'createList'
+    	// createList: 'createList'
     },
     renderToMainPromise: {
-    // getVersion: 'getVersion'
+    	// getVersion: 'getVersion'
     },
     mainToRenderer: {
-    // showNotification: 'showNotification'
+    	// showNotification: 'showNotification'
     }
 } as const satisfies {
   rendererToMainAsync: Record<keyof RendererToMainAsync, string>;

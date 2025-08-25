@@ -5,9 +5,8 @@ export function getDefaultConfig(): ConfigSettings {
         todoListService: {
             host: 'http://localhost:4000',
             todoListsEndpoint: '/lists',
-            todoItemEndpoint: (id: string) => `/todos/${id}`,
+            todoItemEndpoint: (listId: string, todoItemId?: string, isTransitionOperation = false) => `/todos/${listId}/${todoItemId ? todoItemId : ''}${isTransitionOperation ? '/transition' : ''}`,
             todoListUpdatesListenerEndpoint: (id: string, authToken: string) => `/lists/${id}/stream?token=${encodeURIComponent(authToken)}`,
-            todoItemUpdateEndpoint: (todoItemId: string, todoListId: string) => `/todos/${todoListId}/${todoItemId}/transition`
         },
         authService: {
             host: 'http://localhost:4000',

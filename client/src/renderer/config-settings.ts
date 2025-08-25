@@ -15,7 +15,7 @@ export interface ConfigSettings {
 		/**
 		 * TODO item management service endpoint URL.
 		 */
-		todoItemEndpoint: (todoItemId: string) => string;
+		todoItemEndpoint: (ownerTodoListId: string, todoItemId?: string, isTransitionOperation?: boolean) => string;
 
 		/**
 		 * TODO Lists management service endpoint URL.
@@ -26,14 +26,6 @@ export interface ConfigSettings {
 		 * TODO List update listener endpoint URL via SSE.
 		 */
 		todoListUpdatesListenerEndpoint: (todoListId: string, authToken: string) => string;
-
-		/**
-		 * TODO Item update service endpoint URL.
-		 * @param todoItemId TODO item id.
-		 * @param todoListId TODO list id.
-		 * @returns TODO item update service endpoint URL.
-		 */
-		todoItemUpdateEndpoint: (todoItemId: string, todoListId: string) => string;
     };
 
     /**

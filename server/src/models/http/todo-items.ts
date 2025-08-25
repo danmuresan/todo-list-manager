@@ -4,7 +4,7 @@ import type { TodoItem } from '../todo-item';
 /**
  * Params for GET /todos/:listId
  */
-export interface GetTodosParams {
+export interface GetTodoItemsRequestParams {
   /**
    * The list identifier to fetch todos for.
    */
@@ -19,7 +19,7 @@ export type GetTodosResponse = TodoItem[] | ErrorResponsePayload;
 /**
  * Body for POST /todos/:listId
  */
-export interface CreateTodoRequestBody {
+export interface CreateTodoItemRequestPayload {
   /**
    * The title of the todo item.
    */
@@ -34,7 +34,7 @@ export type CreateTodoResponse = TodoItem | ErrorResponsePayload;
 /**
  * Params for POST /todos/:listId/:todoId/transition
  */
-export interface TransitionParams {
+export interface TransitionTodoItemStateRequestParams {
   /**
    * The list containing the target todo.
    */
@@ -49,22 +49,22 @@ export interface TransitionParams {
 /**
  * Body for transition
  */
-export interface TransitionRequestBody {
+export interface TransitionTodoItemStateRequestPayload {
   /**
-   * The direction of the state change.
+   * The transition to perform: move to next or previous state.
    */
-  direction: 'forward' | 'back';
+  transitionItem: 'next' | 'previous';
 }
 
 /**
  * Response for todo transition
  */
-export type TransitionResponse = TodoItem | ErrorResponsePayload;
+export type TransitionTodoItemResponse = TodoItem | ErrorResponsePayload;
 
 /**
  * Params for DELETE /todos/:listId/:todoId
  */
-export interface DeleteTodoParams {
+export interface DeleteTodoItemRequestParams {
   /**
    * The list containing the todo.
    */

@@ -7,8 +7,7 @@ const {
     host,
     todoItemEndpoint,
     todoListsEndpoint,
-    todoListUpdatesListenerEndpoint: todoListUpdateEndpoint,
-    todoItemUpdateEndpoint
+    todoListUpdatesListenerEndpoint,
 } = getDefaultConfig().todoListService;
 
 type Todo = { id: string; listId: string; title: string; state: 'TODO'|'ONGOING'|'DONE' };
@@ -20,10 +19,10 @@ export default function TodoPage() {
     const [todo, setTodo] = useState<Todo | null>(null);
     const navigate = useNavigate();
 
-    const authToken = useMemo(() => localStorage.getItem('token'), []);
+    const cachedAuthToken = useMemo(() => localStorage.getItem('token'), []);
 
     useEffect(() => {
-        if (!authToken) {
+        if (!cachedAuthToken) {
             return navigate('/');
         }
         (async () => {
@@ -33,7 +32,7 @@ export default function TodoPage() {
 
             const allTodoLists: List[] = await fetch(
                 `${host}${todoListsEndpoint}`,
-                getHeaders(authToken)
+                getHeaders(cachedAuthToken)
             ).then(response => response.json());
 
             const matchingTodoList = allTodoLists.find(x => x.id === listId) || allTodoLists[0];
@@ -45,24 +44,24 @@ export default function TodoPage() {
 
             const initialTodos: Todo[] = await fetch(
                 `${host}${todoItemEndpoint(matchingTodoList.id)}`,
-                getHeaders(authToken)
+                getHeaders(cachedAuthToken)
             ).then(r => r.json());
 
             setTodo(initialTodos.find(t => t.id === todoId) || null);
         })();
-    }, [listId, todoId, navigate, authToken]);
+    }, [listId, todoId, navigate, cachedAuthToken]);
 
     useEffect(() => {
-        if (!list || !authToken) {
+        if (!list || !cachedAuthToken) {
             return;
         }
 
-        const eventSource = new EventSource(`${host}${todoListUpdateEndpoint(list.id, authToken)}`);
+        const eventSource = new EventSource(`${host}${todoListUpdatesListenerEndpoint(list.id, cachedAuthToken)}`);
         
     const onListUpdated = async () => {
             const todoItems: Todo[] = await fetch(
                 `${host}${todoItemEndpoint(list.id)}`,
-                getHeaders(authToken)
+                getHeaders(cachedAuthToken)
             ).then(r => r.json());
 
             if (todo?.id) {
@@ -79,24 +78,24 @@ export default function TodoPage() {
         eventSource.addEventListener('todoDeleted', onListDeleted);
 
         return () => eventSource.close();
-    }, [list, authToken, todo?.id, navigate]);
+    }, [list, cachedAuthToken, todo?.id, navigate]);
 
-    async function updateTodoItem(direction: 'forward' | 'back') {
-        if (!list || !todo || !authToken) {
+    async function transitionStateForTodoItem(transitionItem: 'next' | 'previous') {
+        if (!list || !todo || !cachedAuthToken) {
             return;
         }
-        await fetch(`${host}${todoItemUpdateEndpoint(todo.id, list.id)}`, {
+        await fetch(`${host}${todoItemEndpoint(list.id, todo.id, true)}`, {
             method: 'POST',
-            ...getHeaders(authToken,'application/json'),
-            body: JSON.stringify({ direction })
+            ...getHeaders(cachedAuthToken,'application/json'),
+            body: JSON.stringify({ transitionItem })
         });
     }
 
     async function deleteTodoItem() {
-        if (!list || !todo || !authToken) {
+        if (!list || !todo || !cachedAuthToken) {
             return;
         }
-        await fetch(`${host}${todoItemUpdateEndpoint(todo.id, list.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${authToken}` } });
+        await fetch(`${host}${todoItemEndpoint(list.id, todo.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cachedAuthToken}` } });
         navigate('/home');
     }
 
@@ -110,8 +109,8 @@ export default function TodoPage() {
             <h1 style={{ fontSize: 20 }}>{todo.title}</h1>
             <p>State: <strong>{todo.state}</strong></p>
             <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => updateTodoItem('back')}>Back</button>
-                <button onClick={() => updateTodoItem('forward')}>Forward</button>
+                <button onClick={() => transitionStateForTodoItem('previous')}>Back</button>
+                <button onClick={() => transitionStateForTodoItem('next')}>Forward</button>
                 <button onClick={deleteTodoItem}>Delete</button>
             </div>
         </div>

@@ -12,7 +12,7 @@ const {
 type Todo = { id: string; listId: string; title: string; state: 'TODO'|'ONGOING'|'DONE' };
 type List = { id: string; name: string; key: string };
 
-function getToken() { return localStorage.getItem('token'); }
+function getCachedAuthToken() { return localStorage.getItem('token'); }
 
 export default function Home() {
     const [list, setList] = useState<List | null>(null);
@@ -21,7 +21,7 @@ export default function Home() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = getToken();
+        const token = getCachedAuthToken();
         if (!token) {
             navigate('/');
         }
@@ -40,7 +40,7 @@ export default function Home() {
         if (!list) {
             return;
         }
-        const token = getToken();
+        const token = getCachedAuthToken();
         if (!token) {
             return;
         }
@@ -61,14 +61,15 @@ export default function Home() {
         return () => eventSource.close();
     }, [list]);
 
-    const token = useMemo(() => getToken(), [list]);
+    const token = useMemo(() => getCachedAuthToken(), [list]);
 
     async function createTodoListIfNeeded(): Promise<List | null> {
-        const token = getToken();
-        if (!token) {
+        const authToken = getCachedAuthToken();
+        if (!authToken) {
             return null;
         }
-        const lists: List[] = await fetch(`${host}${todoListsEndpoint}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+
+        const lists: List[] = await fetch(`${host}${todoListsEndpoint}`, { headers: { Authorization: `Bearer ${authToken}` } }).then(r => r.json());
         if (lists.length > 0) {
             return lists[0];
         }
@@ -76,11 +77,11 @@ export default function Home() {
         return await fetch(
             `${host}${todoListsEndpoint}`, {
                 method: 'POST',
-                ...getHeaders(token, 'application/json'),
+                ...getHeaders(authToken, 'application/json'),
                 body: JSON.stringify({ 
                     name: 'My List' 
                 })
-            }).then(r => r.json());
+            }).then(response => response.json());
     }
 
     async function addTodoItem(e: React.FormEvent) {
@@ -94,18 +95,31 @@ export default function Home() {
         setTitle('');
     }
 
-    async function deleteTodoItem(t: Todo) {
+    async function deleteTodoItem(todoItem: Todo) {
         if (!list || !token) {
             return;
         }
-        await fetch(`${host}/todos/${list.id}/${t.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+
+        await fetch(
+            `${host}${todoItemEndpoint(list.id, todoItem.id)}`,
+            { 
+                method: 'DELETE',
+                ...getHeaders(token)
+            });
     }
 
-    async function transition(t: Todo, direction: 'forward'|'back') {
+    async function transition(todoItem: Todo, transitionItem: 'next' | 'previous') {
         if (!list || !token) {
             return;
         }
-        await fetch(`${host}/todos/${list.id}/${t.id}/transition`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ direction }) });
+        
+        await fetch(
+            `${host}${todoItemEndpoint(list.id, todoItem.id, true)}`,
+            {
+                method: 'POST',
+                ...getHeaders(token, 'application/json'),
+                body: JSON.stringify({ transitionItem })
+            });
     }
 
     return (
@@ -122,8 +136,8 @@ export default function Home() {
                             {t.title} <span style={{ fontSize: 12, color: '#555' }}>[{t.state}]</span>
                         </span>
                         <span style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => transition(t, 'back')}>Back</button>
-                            <button onClick={() => transition(t, 'forward')}>Forward</button>
+                            <button onClick={() => transition(t, 'previous')}>Back</button>
+                            <button onClick={() => transition(t, 'next')}>Forward</button>
                             <button onClick={() => deleteTodoItem(t)}>Delete</button>
                         </span>
                     </li>

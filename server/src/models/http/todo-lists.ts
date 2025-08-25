@@ -2,7 +2,7 @@ import type { ErrorResponsePayload } from './common';
 import type { TodoList } from '../todo-list';
 
 /** Request body for POST /lists */
-export interface CreateListRequestPayload {
+export interface CreateTodoListRequestPayload {
     /**
      * The name of the list to create.
      */
@@ -12,15 +12,15 @@ export interface CreateListRequestPayload {
 /**
  * Request body for POST /lists/join
  */
-export interface JoinListRequestPayload {
+export interface JoinTodoListRequestPayload {
     /**
      * The key of the list to join.
      */
     key: string;
 }
 
-/** Request body for POST /lists/join */
-export interface JoinListSuccessResponsePayload {
+/** Response body for POST /lists/join */
+export interface JoinTodoListSuccessResponsePayload {
 	/**
      * The ID of the joined list.
      */
@@ -40,14 +40,14 @@ export interface JoinListSuccessResponsePayload {
 /**
  * Response for POST /lists
  */
-export type CreateListResponse = TodoList | ErrorResponsePayload;
+export type CreateTodoListResponse = TodoList | ErrorResponsePayload;
 
 /**
  * Response for POST /lists/join
  */
-export type JoinListResponse = JoinListSuccessResponsePayload | ErrorResponsePayload;
+export type JoinTodoListResponse = JoinTodoListSuccessResponsePayload | ErrorResponsePayload;
 
 /**
  * Response for GET /lists
  */
-export type GetListsResponse = TodoList[] | ErrorResponsePayload;
+export type GetAllTodoListsResponse = TodoList[] | ErrorResponsePayload;
