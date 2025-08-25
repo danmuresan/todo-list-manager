@@ -34,7 +34,7 @@ export default function Register() {
             localStorage.setItem('token', user.token);
             localStorage.setItem('username', username);
             window.electronAPI?.loginWindowCompleted();
-            navigate('/home');
+            navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {
                 setError('Request timed out. Please check the server and try again.');

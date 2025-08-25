@@ -38,8 +38,9 @@ export default function TodoPage() {
                     getHeaders(cachedAuthToken)
                 ).then(response => response.json());
 
-                const matchingTodoList = allTodoLists.find(x => x.id === listId) || allTodoLists[0];
+                const matchingTodoList = allTodoLists.find(x => x.id === listId);
                 if (!matchingTodoList) {
+                    navigate('/lists');
                     return;
                 }
 
@@ -64,7 +65,7 @@ export default function TodoPage() {
 
         const eventSource = new EventSource(`${host}${todoListUpdatesListenerEndpoint(list.id, cachedAuthToken)}`);
         
-        const onListUpdated = async () => {
+        const onAnyListChange = async () => {
             try {
                 const todoItems: Todo[] = await fetch(
                     `${host}${todoItemEndpoint(list.id)}`,
@@ -72,22 +73,23 @@ export default function TodoPage() {
                 ).then(r => r.json());
 
                 if (todo?.id) {
-                    setTodo(todoItems.find(t => t.id === todo.id) || null);
+                    const match = todoItems.find(t => t.id === todo.id) || null;
+                    setTodo(match);
+                    if (!match) {
+                        navigate(`/home/${list.id}`);
+                    }
                 }
             } catch (e: any) {
                 setError(e?.message || 'Failed to refresh todo.');
             }
         };
 
-        const onListDeleted = () => {
-            navigate('/home');
-        };
 
         const onError = () => setError('Realtime connection lost. Retrying…');
 
-        eventSource.addEventListener('todoUpdated', onListUpdated);
-        eventSource.addEventListener('todoCreated', onListUpdated);
-        eventSource.addEventListener('todoDeleted', onListDeleted);
+    eventSource.addEventListener('todoUpdated', onAnyListChange);
+    eventSource.addEventListener('todoCreated', onAnyListChange);
+    eventSource.addEventListener('todoDeleted', onAnyListChange);
         eventSource.addEventListener('error', onError as EventListener);
 
         return () => eventSource.close();
@@ -114,7 +116,7 @@ export default function TodoPage() {
         }
         try {
             await fetch(`${host}${todoItemEndpoint(list.id, todo.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cachedAuthToken}` } });
-            navigate('/home');
+            navigate(`/home/${list.id}`);
         } catch (e: any) {
             setError(e?.message || 'Failed to delete todo.');
         }
@@ -126,7 +128,7 @@ export default function TodoPage() {
 
     return (
         <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <button onClick={() => navigate('/home')}>← Back</button>
+            <button onClick={() => navigate(list ? `/home/${list.id}` : '/lists')}>← Back</button>
             <h1 style={{ fontSize: 20 }}>{todo.title}</h1>
             {error && (
                 <ErrorAlert message={error!} onDismiss={() => setError(null)} />

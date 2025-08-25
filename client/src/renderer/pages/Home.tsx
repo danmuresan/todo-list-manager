@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
 import ErrorAlert from '../components/ErrorAlert';
@@ -23,6 +23,7 @@ export default function Home() {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
     const [username, setUsername] = useState<string | null>(null);
+    const { listId } = useParams();
 
     // After navigating to Home (post-login), ensure the main window is resized/widened
     useEffect(() => {
@@ -39,19 +40,39 @@ export default function Home() {
         // Load username if available
         setUsername(localStorage.getItem('username'));
 
+        // Enforce lists-first flow: require a listId in the route
+        if (!listId) {
+            navigate('/lists');
+            return;
+        }
+
         (async () => {
             try {
-                const todoList = await createTodoListIfNeeded();
-                if (todoList) {
-                    setList(todoList);
-                    const data = await fetch(`${host}${todoItemEndpoint(todoList.id)}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
-                    setTodos(data);
+                // Validate membership and get the list info
+                const lists: List[] = await fetch(
+                    `${host}${todoListsEndpoint}`,
+                    getHeaders(token)
+                ).then(r => r.json());
+
+                const selected = lists.find(l => l.id === listId) || null;
+                if (!selected) {
+                    setError('You are not a member of this list or it does not exist.');
+                    navigate('/lists');
+                    return;
                 }
+                setList(selected);
+
+                // Load todos for the selected list
+                const data: Todo[] = await fetch(
+                    `${host}${todoItemEndpoint(selected.id)}`,
+                    getHeaders(token)
+                ).then(r => r.json());
+                setTodos(data);
             } catch (e: any) {
                 setError(e?.message || 'Failed to load todos.');
             }
         })();
-    }, [navigate]);
+    }, [navigate, listId]);
 
     useEffect(() => {
         if (!list) {
@@ -84,30 +105,6 @@ export default function Home() {
     }, [list]);
 
     const token = useMemo(() => getCachedAuthToken(), [list]);
-
-    async function createTodoListIfNeeded(): Promise<List | null> {
-        const authToken = getCachedAuthToken();
-        if (!authToken) {
-            return null;
-        }
-        try {
-            const lists: List[] = await fetch(`${host}${todoListsEndpoint}`, { headers: { Authorization: `Bearer ${authToken}` } }).then(r => r.json());
-            if (lists.length > 0) {
-                return lists[0];
-            }
-            return await fetch(
-                `${host}${todoListsEndpoint}`, {
-                    method: 'POST',
-                    ...getHeaders(authToken, 'application/json'),
-                    body: JSON.stringify({ 
-                        name: 'My List' 
-                    })
-                }).then(response => response.json());
-        } catch (e: any) {
-            setError(e?.message || 'Failed to create or load list.');
-            return null;
-        }
-    }
 
     async function addTodoItem(e: React.FormEvent) {
         e.preventDefault();
@@ -168,7 +165,7 @@ export default function Home() {
     return (
         <div style={{ padding: 16, maxWidth: 800, margin: '0 auto', fontFamily: 'system-ui' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <h1 style={{ fontSize: 20, margin: 0 }}>My TODOs</h1>
+                <h1 style={{ fontSize: 20, margin: 0 }}>{list ? `${list.name} – Todos` : 'Todos'}</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {username && (
                         <span title="Signed in user" style={{ color: '#444' }}>User: {username}</span>
@@ -205,6 +202,11 @@ export default function Home() {
                     </li>
                 ))}
             </ul>
+
+            {/* Pinned bottom button to allow joining a different list */}
+            <div style={{ position: 'fixed', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+                <button style={{ pointerEvents: 'auto' }} onClick={() => navigate('/lists')}>Join a different list</button>
+            </div>
         </div>
     );
 }

@@ -43,7 +43,7 @@ export default function Login() {
             // Persist username for display on Home and easy logout UX
             localStorage.setItem('username', username);
             window.electronAPI?.loginWindowCompleted();
-            navigate('/home');
+            navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {
                 setError('Request timed out. Please check the server and try again.');

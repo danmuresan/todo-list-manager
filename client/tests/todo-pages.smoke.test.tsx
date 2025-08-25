@@ -3,7 +3,7 @@ import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globa
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Home from '../src/renderer/pages/Home';
-import TodoPage from '../src/renderer/pages/Todo';
+import TodoPage from '../src/renderer/pages/TodoItem';
 
 type MockResponse = { ok: true; status: number; json: () => Promise<any> };
 
