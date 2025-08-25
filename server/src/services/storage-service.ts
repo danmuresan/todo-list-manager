@@ -7,12 +7,18 @@ import { logger } from './logger';
 const DATA_DIR: string = process.env.DATA_DIR || path.join(process.cwd(), 'src', 'data');
 const DB_PATH: string = path.join(DATA_DIR, 'db.json');
 
+/**
+ * Initial data for the storage.
+ */
 export const initialData: Storage = {
     users: [],
     lists: [],
     todos: [],
 };
 
+/**
+ * Storage service for managing application data.
+ */
 class StorageService implements IStorageService {
     public getStorageData(): Storage {
         return this.readDataFromStorage();

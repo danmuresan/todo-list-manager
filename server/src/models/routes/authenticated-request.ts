@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import type { ParsedQs } from 'qs';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import type { JwtPayload } from '../models/auth/jwt-payload';
+import type { JwtPayload } from '../auth/jwt-payload';
 
 /**
  * Express Request with an optional authenticated user attached by auth middleware.

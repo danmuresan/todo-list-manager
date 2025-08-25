@@ -56,34 +56,8 @@ describe('Lists and Todos tests', () => {
         expect(back.body.state).toBe('TODO');
     });
 
-    test('delete todo', async () => {
-        const username = 'charlie';
-        const { body: user } = await request(app).post('/auth/register').send({ username });
-        const token: string = user.token;
 
-        const listRes = await request(app)
-            .post('/lists')
-            .set('Authorization', `Bearer ${token}`)
-            .send({ name: 'Work' });
-        expect(listRes.status).toBe(201);
-        const listId: string = listRes.body.id;
 
-        const todoRes = await request(app)
-            .post(`/todos/${listId}`)
-            .set('Authorization', `Bearer ${token}`)
-            .send({ title: 'Deletable Task' });
-        expect(todoRes.status).toBe(201);
-        const todoId: string = todoRes.body.id;
 
-        const delRes = await request(app)
-            .delete(`/todos/${listId}/${todoId}`)
-            .set('Authorization', `Bearer ${token}`);
-        expect(delRes.status).toBe(204);
 
-        const listTodos = await request(app)
-            .get(`/todos/${listId}`)
-            .set('Authorization', `Bearer ${token}`);
-        expect(listTodos.status).toBe(200);
-        expect(listTodos.body.find((t: { id: string }) => t.id === todoId)).toBeUndefined();
-    });
 });

@@ -6,6 +6,9 @@ import { logger as defaultLogger } from './logger';
 type SSEClient = Response;
 type Primitive = string | number | boolean | null;
 
+/**
+ * Server-Sent Events (SSE) service for managing SSE connections and broadcasting events.
+ */
 class SseService implements ISseService {
     private clientsByList: Map<string, Set<SSEClient>> = new Map();
     private readonly logger: ILogger;

@@ -1,5 +1,8 @@
 import { IDIContainerManager } from "./abstractions/di-container-manager-abstraction";
 
+/**
+ * DI container manager implementation.
+ */
 export class DIContainerManager implements IDIContainerManager {
     private readonly services = new Map<string, () => unknown>();
 

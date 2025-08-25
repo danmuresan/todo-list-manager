@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { newId } from '../helpers/id-generator-helper';
 import { createAuthMiddleware } from '../auth';
 import type { AppDependencies } from '../di/di-container';
@@ -15,9 +15,9 @@ import type {
     TransitionTodoItemResponse,
     DeleteTodoItemRequestParams,
     DeleteTodoResponse,
-} from '../models/http/todo-items';
+} from '../models/api/todo-items';
 import { TODO_ITEM_ROUTES } from './route-paths';
-import type { AuthenticatedRequest } from '../types/authenticated-request';
+import type { AuthenticatedRequest } from '../models/routes/authenticated-request';
 
 /**
  * Creates routes for managing todo items.
@@ -43,8 +43,7 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
     }
 
     function isMember(listId: string, userId: string, services: AppDependencies): boolean {
-        const db = services.storage.getStorageData();
-        const list = db.lists.find(l => l.id === listId);
+        const list = services.todoListsRepo.getById(listId);
         return !!list && list.members.includes(userId);
     }
 
@@ -59,8 +58,7 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
             return res.status(403).json({ error: 'Forbidden' });
         }
 
-        const db = deps.storage.getStorageData();
-        const todos = db.todos.filter(t => t.listId === listId);
+        const todos = deps.todoItemsRepo.getAll().filter(t => t.listId === listId);
 
         return res.json(todos);
     });
@@ -82,11 +80,8 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
         const now = new Date().toISOString();
         const todo: TodoItem = { id, listId, title, state: TodoItemState.ToDo, createdBy: userId, updatedAt: now };
         
-        deps.storage.updateStorageData((data) => {
-            data.todos.push(todo);
-            return data;
-        });
-        
+        deps.todoItemsRepo.add(todo);
+
         deps.sse.broadcast(listId, 'todoCreated', { todo });
 
         return res.status(201).json(todo);
@@ -107,23 +102,21 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
 
         let updated: TodoItem | undefined;
         try {
-            deps.storage.updateStorageData((data) => {
-                const todo = data.todos.find(t => t.id === todoId && t.listId === listId);
-                if (!todo) {
-                    throw new Error('NotFound');
-                }
-
+            let exists = false;
+            deps.todoItemsRepo.update((todo) => {
+                if (todo.id !== todoId || todo.listId !== listId) return;
+                exists = true;
                 const next = transitionState(todo.state, transitionItem);
                 if (!next || next === todo.state) {
                     throw new Error('NoTransition');
                 }
-
                 todo.state = next;
                 todo.updatedAt = new Date().toISOString();
                 updated = { ...todo };
-
-                return data;
-            });
+            }, (t) => t.id === todoId && t.listId === listId);
+            if (!exists) {
+                throw new Error('NotFound');
+            }
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             logger.error?.('[TodosRouter] transition error:', message);
@@ -156,19 +149,7 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
             return res.status(403).json({ error: 'Forbidden' });
         }
 
-        let removed = false;
-        deps.storage.updateStorageData((data) => {
-            const idx = data.todos.findIndex(t => t.id === todoId && t.listId === listId);
-            
-            if (idx === -1) {
-                return data;
-            }
-
-            data.todos.splice(idx, 1);
-            removed = true;
-
-            return data;
-        });
+        const removed = deps.todoItemsRepo.removeById(todoId);
 
         if (!removed) {
             return res.status(404).json({ error: 'Todo not found' });

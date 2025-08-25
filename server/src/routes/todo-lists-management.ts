@@ -1,9 +1,9 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { newId, newKey } from '../helpers/id-generator-helper';
 import { createAuthMiddleware } from '../auth';
 import type { AppDependencies } from '../di/di-container';
-import type { CreateTodoListRequestPayload, CreateTodoListResponse, JoinTodoListRequestPayload, JoinTodoListResponse, GetAllTodoListsResponse, GetTodoListStreamRequestParams } from '../models/http/todo-lists';
-import type { AuthenticatedRequest, NoParams } from '../types/authenticated-request';
+import type { CreateTodoListRequestPayload, CreateTodoListResponse, JoinTodoListRequestPayload, JoinTodoListResponse, GetAllTodoListsResponse, GetTodoListStreamRequestParams } from '../models/api/todo-lists';
+import type { AuthenticatedRequest, NoParams } from '../models/routes/authenticated-request';
 import { TODO_LIST_ROUTES } from './route-paths';
 
 /**
@@ -12,6 +12,7 @@ import { TODO_LIST_ROUTES } from './route-paths';
  */
 export default function createTodoListsManagementRouter(deps: AppDependencies): ReturnType<typeof Router> {
     const router = Router();
+    const listsRepo = deps.todoListsRepo;
 
     // Attach auth middleware for all list routes
     const auth = createAuthMiddleware(deps.logger);
@@ -23,15 +24,12 @@ export default function createTodoListsManagementRouter(deps: AppDependencies): 
             return res.status(400).json({ error: 'Name required' });
         }
 
-        const id = newId();
-        const key = newKey(10);
-        const userId = req.user!.id;
-        const list = { id, name, key, members: [userId] };
+    const id = newId();
+    const key = newKey(10);
+    const userId = req.user!.id;
+    const list = { id, name, key, members: [userId] };
 
-        deps.storage.updateStorageData((data) => {
-            data.lists.push(list);
-            return data;
-        });
+    listsRepo.add(list);
 
         deps.sse.broadcast(list.id, 'listCreated', { list });
         return res.status(201).json(list);
@@ -39,40 +37,33 @@ export default function createTodoListsManagementRouter(deps: AppDependencies): 
 
     router.post(TODO_LIST_ROUTES.join, (req: AuthenticatedRequest<NoParams, JoinTodoListResponse, JoinTodoListRequestPayload>, res: Response<JoinTodoListResponse>): Response => {
         const { key } = (req.body || {});
-        const userId = req.user!.id;
-        const db = deps.storage.getStorageData();
-        const list = db.lists.find(l => l.key === key);
+    const userId = req.user!.id;
+    const list = listsRepo.getAll().find(l => l.key === key);
 
         if (!list) {
             return res.status(404).json({ error: 'List not found' });
         }
 
-        deps.storage.updateStorageData((data) => {
-            const matchedList = data.lists.find(ll => ll.id === list.id);
-
-            if (!matchedList?.members.includes(userId)) {
-                matchedList?.members.push(userId);
+        listsRepo.update((matchedList) => {
+            if (!matchedList.members.includes(userId)) {
+                matchedList.members.push(userId);
             }
-            
-            return data;
-        });
+        }, (l) => l.id === list.id);
 
         deps.sse.broadcast(list.id, 'memberJoined', { userId });
         return res.json({ id: list.id, name: list.name, key: list.key });
     });
 
     router.get(TODO_LIST_ROUTES.root, (req: AuthenticatedRequest<NoParams, GetAllTodoListsResponse>, res: Response<GetAllTodoListsResponse>): Response => {
-        const userId = req.user!.id;
-        const db = deps.storage.getStorageData();
-        const lists = db.lists.filter(l => l.members.includes(userId));
+    const userId = req.user!.id;
+    const lists = listsRepo.getAll().filter(l => l.members.includes(userId));
         return res.json(lists);
     });
 
     router.get(TODO_LIST_ROUTES.stream, (req: AuthenticatedRequest<GetTodoListStreamRequestParams>, res: Response): Response | void => {
-        const { listId } = req.params;
-        const userId = req.user!.id;
-        const db = deps.storage.getStorageData();
-        const list = db.lists.find(l => l.id === listId);
+    const { listId } = req.params;
+    const userId = req.user!.id;
+    const list = listsRepo.getById(listId);
 
         if (!list) {
             return res.status(404).json({ error: 'List not found' });

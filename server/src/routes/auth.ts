@@ -2,8 +2,9 @@ import { Router, Request, Response } from 'express';
 import type { AppDependencies } from '../di/di-container';
 import { newId } from '../helpers/id-generator-helper';
 import { generateAuthToken } from '../auth';
-import type { RegisterRequestPayload, RegisterResponse, AuthorizeRequestPayload, AuthorizeResponse } from '../models/http/auth';
+import type { RegisterRequestPayload, RegisterResponse, AuthorizeRequestPayload, AuthorizeResponse } from '../models/api/auth';
 import { AUTH_ROUTES } from './route-paths';
+import type { User } from '../models/user';
 
 /**
  * Creates routes for managing auth.
@@ -23,15 +24,14 @@ export default function createAuthRouter(deps: AppDependencies): ReturnType<type
             const id = newId();
             const token = generateAuthToken({ id, username });
 
-            deps.storage.updateStorageData((data) => {
-                if (data.users.find(u => u.username === username)) {
-                    throw new Error('User exists');
-                }
-                data.users.push({ id, username, token });
-                return data;
-            });
+            // Ensure username uniqueness
+            const existing = deps.usersRepo.getAll().find(u => u.username === username);
+            if (existing) {
+                throw new Error('User exists');
+            }
 
-            const user = { id, username, token };
+            const user: User = { id, username, token };
+            deps.usersRepo.add(user);
             return res.json(user);
         } catch (e) {
             const err = e as Error;
@@ -47,20 +47,17 @@ export default function createAuthRouter(deps: AppDependencies): ReturnType<type
 
     router.post(AUTH_ROUTES.authorize, (req: Request, res: Response<AuthorizeResponse>): Response => {
         const { username } = (req.body || {}) as AuthorizeRequestPayload;
-        const db = deps.storage.getStorageData();
-        const user = db.users.find(u => u.username === username);
+        const user = deps.usersRepo.getAll().find(u => u.username === username);
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const token = generateAuthToken({ id: user.id, username: user.username });
-        deps.storage.updateStorageData((data) => {
-            const u = data.users.find(uu => uu.id === user.id);
-            if (u) {
+        deps.usersRepo.update((u) => {
+            if (u.id === user.id) {
                 u.token = token;
             }
-            return data;
         });
 
         return res.json({ id: user.id, username: user.username, token });
