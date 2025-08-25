@@ -1,0 +1,55 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Electron: Main (client)",
+      "cwd": "${workspaceFolder}/client",
+      "runtimeExecutable": "${workspaceFolder}/client/node_modules/.bin/electron",
+      "program": "${workspaceFolder}/client/dist/main/main.js",
+      "preLaunchTask": "client: build",
+      "outFiles": [
+        "${workspaceFolder}/client/dist/**/*.js"
+      ],
+      "sourceMaps": true,
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Server: Dev (ts-node-dev)",
+      "cwd": "${workspaceFolder}/server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "chrome",
+      "request": "attach",
+      "name": "Attach: Electron Renderer (9222)",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/client",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${webRoot}/*",
+        "webpack:///*": "*",
+        "webpack:///src/*": "${webRoot}/src/*",
+        "*/dist/*": "${webRoot}/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "App: Server + Electron",
+      "configurations": [
+        "Server: Dev (ts-node-dev)",
+        "Electron: Main (client)"
+      ]
+    }
+  ]
+}

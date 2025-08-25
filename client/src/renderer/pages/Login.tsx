@@ -40,6 +40,8 @@ export default function Login() {
             }
             const user = await res.json();
             localStorage.setItem('token', user.token);
+            // Persist username for display on Home and easy logout UX
+            localStorage.setItem('username', username);
             window.electronAPI?.loginWindowCompleted();
             navigate('/home');
         } catch (err: any) {

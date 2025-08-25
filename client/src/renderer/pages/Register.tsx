@@ -32,6 +32,7 @@ export default function Register() {
             }
             const user = await res.json();
             localStorage.setItem('token', user.token);
+            localStorage.setItem('username', username);
             window.electronAPI?.loginWindowCompleted();
             navigate('/home');
         } catch (err: any) {

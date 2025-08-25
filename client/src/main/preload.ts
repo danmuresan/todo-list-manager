@@ -1,15 +1,28 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import type { RendererToMainAsync, MainToRenderer } from '../shared/ipc';
-import { Channels } from '../shared/ipc';
-import type { RendererAPI } from '../shared/ipc';
+// Preload startup log to ensure this script actually runs
+console.log('[Preload] script loaded');
+import type { RendererToMainAsync, MainToRenderer, RendererAPI } from '../shared/ipc';
 
 type ExposedAPI = RendererAPI<RendererToMainAsync> & {
   on<K extends keyof MainToRenderer>(channel: K, listener: (payload: MainToRenderer[K]) => void): () => void;
 };
 
+const CHANNELS = {
+    setupMainWindowBoundsForLogin: 'setupMainWindowBoundsForLogin',
+    loginWindowCompleted: 'loginWindowCompleted'
+} as const;
+
 const api: ExposedAPI = {
-    setupMainWindowBoundsForLogin: () => ipcRenderer.send(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin),
-    loginWindowCompleted: () => ipcRenderer.send(Channels.rendererToMainAsync.loginWindowCompleted),
+    setupMainWindowBoundsForLogin: () => {
+        console.log('[Renderer] setupMainWindowBoundsForLogin -> send');
+        ipcRenderer.send(CHANNELS.setupMainWindowBoundsForLogin);
+    },
+    loginWindowCompleted: () => {
+        console.log('[Renderer] loginWindowCompleted -> send');
+        ipcRenderer.send(CHANNELS.loginWindowCompleted);
+        // safety net in case of channel mismatch
+        ipcRenderer.send('loginWindowCompleted');
+    },
     on: (channel, listener) => {
         const wrapped = (_ev: IpcRendererEvent, payload: unknown) => {
             listener(payload as MainToRenderer[typeof channel]);
@@ -19,4 +32,9 @@ const api: ExposedAPI = {
     }
 };
 
-contextBridge.exposeInMainWorld('electronAPI', api);
+try {
+    contextBridge.exposeInMainWorld('electronAPI', api);
+    console.log('[Preload] electronAPI exposed');
+} catch (err) {
+    console.error('[Preload] exposeInMainWorld failed', err);
+}

@@ -133,8 +133,16 @@ export default function TodoPage() {
             )}
             <p>State: <strong>{todo.state}</strong></p>
             <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => transitionStateForTodoItem('previous')}>Back</button>
-                <button onClick={() => transitionStateForTodoItem('next')}>Forward</button>
+                {todo.state !== 'TODO' && (
+                    <button onClick={() => transitionStateForTodoItem('previous')}>
+                        {todo.state === 'DONE' ? 'In Progress' : 'To Be Done'}
+                    </button>
+                )}
+                {todo.state !== 'DONE' && (
+                    <button onClick={() => transitionStateForTodoItem('next')}>
+                        {todo.state === 'TODO' ? 'In Progress' : 'Mark Done'}
+                    </button>
+                )}
                 <button onClick={deleteTodoItem}>Delete</button>
             </div>
         </div>

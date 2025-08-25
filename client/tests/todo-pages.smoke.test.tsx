@@ -66,8 +66,8 @@ describe('todo item management pages (smoke)', () => {
         // Wait for todo to render
         await screen.findByText(/Task A/i);
 
-        // Click Forward -> should send transitionItem: 'next'
-        const forwardBtn = screen.getByText('Forward');
+    // Click In Progress (forward from TODO) -> should send transitionItem: 'next'
+    const forwardBtn = screen.getByText(/In Progress/);
         fireEvent.click(forwardBtn);
         await waitFor(() => {
             const calls = ((global as any).fetch as jest.Mock).mock.calls;
@@ -77,8 +77,10 @@ describe('todo item management pages (smoke)', () => {
             expect(body).toEqual({ transitionItem: 'next' });
         });
 
-        // Click Back -> should send transitionItem: 'previous'
-        const backBtn = screen.getByText('Back');
+    // Click TODO (back from Ongoing) -> should send transitionItem: 'previous'
+    // In our Home page initial data, item is TODO so Back is hidden; simulate that the item became Ongoing by clicking forward first, then expect a TODO button present on subsequent updates.
+    // For this smoke test, directly look for a button that may be labeled 'To Be Done' when state is Ongoing.
+    const backBtn = screen.getByText(/To Be Done|Back/);
         fireEvent.click(backBtn);
         await waitFor(() => {
             const calls = ((global as any).fetch as jest.Mock).mock.calls;
@@ -116,7 +118,7 @@ describe('todo item management pages (smoke)', () => {
 
         await screen.findByText(/Task B/i);
 
-        const backBtn = await screen.findByText('Back');
+    const backBtn = await screen.findByText(/To Be Done|Back/);
         fireEvent.click(backBtn);
         await waitFor(() => {
             const calls = ((global as any).fetch as jest.Mock).mock.calls;

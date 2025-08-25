@@ -1,16 +1,24 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import fs from 'fs';
 import { Channels } from '../shared/ipc';
 import path from 'path';
 
 let mainWindow: BrowserWindow | null = null;
 
+// Enable remote debugging for renderer processes so VS Code can attach
+app.commandLine.appendSwitch('remote-debugging-port', '9222');
+
 function createWindow() {
+    const preloadPath = path.join(__dirname, 'preload.js');
+    console.log('[Main] preload path:', preloadPath, 'exists?', fs.existsSync(preloadPath));
     mainWindow = new BrowserWindow({
         width: 460,
         height: 660,
         resizable: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js')
+            preload: preloadPath,
+            contextIsolation: true,
+            nodeIntegration: false
         }
     });
 
@@ -20,6 +28,14 @@ function createWindow() {
     } else {
         mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
+
+    mainWindow.webContents.on('did-finish-load', () => {
+        mainWindow?.webContents.executeJavaScript('Boolean(window.electronAPI)')
+            .then((hasApi: boolean) => {
+                console.log('[Main] window.electronAPI present?', hasApi);
+            })
+            .catch(err => console.error('[Main] executeJavaScript error', err));
+    });
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -51,13 +67,21 @@ ipcMain.on(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin, () => {
     mainWindow.center();
 });
 
-ipcMain.on(Channels.rendererToMainAsync.loginWindowCompleted, () => {
+const handleLoginCompleted = () => {
     if (!mainWindow) {
         return;
     }
+    console.log('[Main] loginWindowCompleted received');
     mainWindow.setResizable(true);
-    const { workArea } = screen.getPrimaryDisplay();
-    mainWindow.setBounds(workArea);
-});
+    // Make the main window a bit wider so labels fit comfortably
+    mainWindow.setMinimumSize(800, 600);
+    mainWindow.setSize(960, 720);
+    mainWindow.center();
+};
+
+// Listen via typed channel name
+ipcMain.on(Channels.rendererToMainAsync.loginWindowCompleted, handleLoginCompleted);
+// Also listen on raw string as a safety net (in case of channel mapping mismatch)
+ipcMain.on('loginWindowCompleted', handleLoginCompleted);
 
 // (no-op helpers currently)
