@@ -8,7 +8,7 @@ const { host, registerEndpoint } = getDefaultConfig().authService;
 /**
  * User registration UI component.
  */
-export default function Register() {
+export default function RegisterUserPage() {
     const [username, setUsername] = useState('');
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();

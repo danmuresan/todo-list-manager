@@ -2,8 +2,8 @@ import React from 'react';
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import Home from '../src/renderer/pages/Home';
-import TodoItem from '../src/renderer/pages/TodoItem';
+import HomePage from '../src/renderer/pages/Home';
+import TodoItemView from '../src/renderer/pages/TodoItemView';
 
 type MockResponse = { ok: true; status: number; json: () => Promise<any> };
 
@@ -58,7 +58,7 @@ describe('todo item management pages (smoke)', () => {
         render(
             <MemoryRouter initialEntries={["/home"]}>
                 <Routes>
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/home" element={<HomePage />} />
                 </Routes>
             </MemoryRouter>
         );
@@ -111,7 +111,7 @@ describe('todo item management pages (smoke)', () => {
         render(
             <MemoryRouter initialEntries={[`/todo/${LIST_ID}/${TODO_ID}`]}>
                 <Routes>
-                    <Route path="/todo/:listId/:todoId" element={<TodoItem />} />
+                    <Route path="/todo/:listId/:todoId" element={<TodoItemView />} />
                 </Routes>
             </MemoryRouter>
         );

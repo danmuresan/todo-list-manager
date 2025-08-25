@@ -2,16 +2,16 @@ import React from 'react';
 import { describe, test, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import Login from '../src/renderer/pages/Login';
-import Register from '../src/renderer/pages/Register';
+import LoginPage from '../src/renderer/pages/Login';
+import RegisterUserPage from '../src/renderer/pages/Register';
 
 describe('client smoke test', () => {
   test('renders Login by default route', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterUserPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -25,8 +25,8 @@ describe('client smoke test', () => {
     render(
       <MemoryRouter initialEntries={['/register']}>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterUserPage />} />
         </Routes>
       </MemoryRouter>
     );

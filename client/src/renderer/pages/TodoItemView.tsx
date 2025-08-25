@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
 import ErrorAlert from '../components/ErrorAlert';
+import type { TodoItem, TodoList } from '../models/models';
+import { getCachedAuthToken } from '../../utils/auth-utils';
 
 const {
     host,
@@ -11,20 +13,19 @@ const {
     todoListUpdatesListenerEndpoint,
 } = getDefaultConfig().todoListService;
 
-type Todo = { id: string; listId: string; title: string; state: 'TODO'|'ONGOING'|'DONE' };
-type List = { id: string; name: string; key: string };
+// shared models used instead of inline types
 
 /**
  * Todo item UI component
  */
-export default function TodoItem() {
+export default function TodoItemView() {
     const { listId, todoId } = useParams();
-    const [list, setList] = useState<List | null>(null);
-    const [todo, setTodo] = useState<Todo | null>(null);
+    const [list, setList] = useState<TodoList | null>(null);
+    const [todo, setTodo] = useState<TodoItem | null>(null);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const cachedAuthToken = useMemo(() => localStorage.getItem('token'), []);
+    const cachedAuthToken = useMemo(() => getCachedAuthToken(), []);
 
     useEffect(() => {
         if (!cachedAuthToken) {
@@ -36,7 +37,7 @@ export default function TodoItem() {
                     return;
                 }
 
-                const allTodoLists: List[] = await fetch(
+                const allTodoLists: TodoList[] = await fetch(
                     `${host}${todoListsEndpoint}`,
                     getHeaders(cachedAuthToken)
                 ).then(response => response.json());
@@ -49,7 +50,7 @@ export default function TodoItem() {
 
                 setList(matchingTodoList);
 
-                const initialTodos: Todo[] = await fetch(
+                const initialTodos: TodoItem[] = await fetch(
                     `${host}${todoItemEndpoint(matchingTodoList.id)}`,
                     getHeaders(cachedAuthToken)
                 ).then(r => r.json());
@@ -70,7 +71,7 @@ export default function TodoItem() {
         
         const onAnyListChange = async () => {
             try {
-                const todoItems: Todo[] = await fetch(
+                const todoItems: TodoItem[] = await fetch(
                     `${host}${todoItemEndpoint(list.id)}`,
                     getHeaders(cachedAuthToken)
                 ).then(r => r.json());

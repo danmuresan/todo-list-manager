@@ -12,7 +12,7 @@ const { host, authorizeEndpoint } = getDefaultConfig().authService;
 /**
  * User login UI component.
  */
-export default function Login() {
+export default function LoginPage() {
     const [username, setUsername] = useState('');
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();

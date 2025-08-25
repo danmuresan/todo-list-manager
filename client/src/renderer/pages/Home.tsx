@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
 import ErrorAlert from '../components/ErrorAlert';
+import type { TodoItem, TodoList } from '../models/models';
+import { getCachedAuthToken } from '../../utils/auth-utils';
+import UserHeader from '../components/UserHeader';
 
 const { 
     host,
@@ -11,21 +14,17 @@ const {
     todoItemEndpoint
 } = getDefaultConfig().todoListService;
 
-type Todo = { id: string; listId: string; title: string; state: 'TODO'|'ONGOING'|'DONE' };
-type List = { id: string; name: string; key: string };
-
-function getCachedAuthToken() { return localStorage.getItem('token'); }
+// types and token helper are now shared
 
 /**
  * Home page UI component (list of TODO items in a list)
  */
 export default function Home() {
-    const [list, setList] = useState<List | null>(null);
-    const [todos, setTodos] = useState<Todo[]>([]);
+    const [list, setList] = useState<TodoList | null>(null);
+    const [todos, setTodos] = useState<TodoItem[]>([]);
     const [title, setTitle] = useState('');
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
-    const [username, setUsername] = useState<string | null>(null);
     const { listId } = useParams();
 
     // After navigating to Home (post-login), ensure the main window is resized/widened
@@ -40,8 +39,7 @@ export default function Home() {
             navigate('/');
             return;
         }
-        // Load username if available
-        setUsername(localStorage.getItem('username'));
+    // UserHeader reads username directly from localStorage
 
         // Enforce lists-first flow: require a listId in the route
         if (!listId) {
@@ -52,7 +50,7 @@ export default function Home() {
         (async () => {
             try {
                 // Validate membership and get the list info
-                const lists: List[] = await fetch(
+                const lists: TodoList[] = await fetch(
                     `${host}${todoListsEndpoint}`,
                     getHeaders(token)
                 ).then(r => r.json());
@@ -66,7 +64,7 @@ export default function Home() {
                 setList(selected);
 
                 // Load todos for the selected list
-                const data: Todo[] = await fetch(
+                const data: TodoItem[] = await fetch(
                     `${host}${todoItemEndpoint(selected.id)}`,
                     getHeaders(token)
                 ).then(r => r.json());
@@ -124,7 +122,7 @@ export default function Home() {
         }
     }
 
-    async function deleteTodoItem(todoItem: Todo) {
+    async function deleteTodoItem(todoItem: TodoItem) {
         if (!list || !token) {
             return;
         }
@@ -140,7 +138,7 @@ export default function Home() {
         }
     }
 
-    async function transition(todoItem: Todo, transitionItem: 'next' | 'previous') {
+    async function transition(todoItem: TodoItem, transitionItem: 'next' | 'previous') {
         if (!list || !token) {
             return;
         }
@@ -157,25 +155,9 @@ export default function Home() {
         }
     }
 
-    function logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        // Resize back to login window size immediately
-        (window as any).electronAPI?.setupMainWindowBoundsForLogin();
-        navigate('/');
-    }
-
     return (
         <div style={{ padding: 16, maxWidth: 800, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <h1 style={{ fontSize: 20, margin: 0 }}>{list ? `${list.name} – Todos` : 'Todos'}</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {username && (
-                        <span title="Signed in user" style={{ color: '#444' }}>User: {username}</span>
-                    )}
-                    <button onClick={logout}>Logout</button>
-                </div>
-            </div>
+            <UserHeader title={list ? `${list.name} – Todos` : 'Todos'} />
             {error && (
                 <ErrorAlert message={error!} onDismiss={() => setError(null)} />
             )}
@@ -184,7 +166,7 @@ export default function Home() {
                 <button type="submit">Add</button>
             </form>
             <ul style={{ listStyle: 'none', padding: 0 }}>
-                {todos.map((t: Todo) => (
+                {todos.map((t: TodoItem) => (
                     <li key={t.id} style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid #ddd' }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => navigate(`/todo/${list?.id}/${t.id}`)}>
                             {t.title} <span style={{ fontSize: 12, color: '#555' }}>[{t.state}]</span>
