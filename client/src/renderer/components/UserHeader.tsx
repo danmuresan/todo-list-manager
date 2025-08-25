@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { localize } from '../../localization/i18n';
 
 /**
  * Top-right user header rendering the current username and a Logout button.
@@ -20,9 +21,9 @@ export default function UserHeader({ title }: { title: string }) {
       <h1 style={{ fontSize: 20, margin: 0 }}>{title}</h1>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {username && (
-          <span title="Signed in user" style={{ color: '#444' }}>User: {username}</span>
+          <span title={localize('header.signedInUser.tooltip')} style={{ color: '#444' }}>{localize('header.userPrefix')} {username}</span>
         )}
-        <button onClick={logout}>Logout</button>
+        <button onClick={logout}>{localize('header.logout')}</button>
       </div>
     </div>
   );

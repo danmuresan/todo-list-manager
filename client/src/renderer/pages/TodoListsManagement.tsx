@@ -6,6 +6,7 @@ import ErrorAlert from '../components/ErrorAlert';
 import UserHeader from '../components/UserHeader';
 import type { TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
+import { localize } from '../../localization/i18n';
 
 const { host, todoListsEndpoint } = getDefaultConfig().todoListService;
 
@@ -46,7 +47,7 @@ export default function TodoListsManagementPage() {
         const token = getCachedAuthToken();
 
         if (!token || !createName.trim()) {
-             return;
+            return;
         }
 
         try {
@@ -65,7 +66,8 @@ export default function TodoListsManagementPage() {
     async function onJoin(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
-    const token = getCachedAuthToken();
+        const token = getCachedAuthToken();
+
         if (!token || !joinKey.trim()) {
             return;
         }
@@ -85,28 +87,28 @@ export default function TodoListsManagementPage() {
 
     return (
         <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <UserHeader title="Your Lists" />
+            <UserHeader title={localize('lists.title')} />
             {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
             <ul style={{ listStyle: 'none', padding: 0, marginBottom: 16 }}>
-                {lists.map(l => (
-                    <li key={l.id} style={{ padding: 8, borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>{l.name}</span>
-                        <button onClick={() => navigate(`/home/${l.id}`)}>Open</button>
+                {lists.map(list => (
+                    <li key={list.id} style={{ padding: 8, borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>{list.name}</span>
+                        <button onClick={() => navigate(`/home/${list.id}`)}>{localize('lists.open')}</button>
                     </li>
                 ))}
                 {lists.length === 0 && (
-                    <li style={{ color: '#666' }}>No lists yet. Create one or join with a key.</li>
+                    <li style={{ color: '#666' }}>{localize('lists.empty')}</li>
                 )}
             </ul>
 
             <form onSubmit={onJoin} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 16 }}>
-                <input placeholder="Enter invite key to join" value={joinKey} onChange={e => setJoinKey(e.target.value)} />
-                <button type="submit">Join</button>
+                <input placeholder={localize('lists.join.placeholder')} value={joinKey} onChange={e => setJoinKey(e.target.value)} />
+                <button type="submit">{localize('lists.join.submit')}</button>
             </form>
 
             <form onSubmit={onCreate} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
-                <input placeholder="New list name" value={createName} onChange={e => setCreateName(e.target.value)} />
-                <button type="submit">Create & Open</button>
+                <input placeholder={localize('lists.create.placeholder')} value={createName} onChange={e => setCreateName(e.target.value)} />
+                <button type="submit">{localize('lists.create.submit')}</button>
             </form>
         </div>
     );

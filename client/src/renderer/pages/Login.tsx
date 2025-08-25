@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
+import { localize } from '../../localization/i18n';
 
 declare global {
   interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
@@ -40,12 +41,12 @@ export default function LoginPage() {
             clearTimeout(timeout);
 
             if (authorizeResponse.status === 401) {
-                setError('No user found. Please create an account.');
+                setError(localize('login.error.notFound'));
                 return;
             }
 
             if (!authorizeResponse.ok) {
-                throw new Error(`Login failed: ${authorizeResponse.status}`);
+                throw new Error(`${localize('login.error.failed')} ${authorizeResponse.status}`);
             }
 
             const user = await authorizeResponse.json();
@@ -61,24 +62,24 @@ export default function LoginPage() {
             navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {
-                setError('Request timed out. Please check the server and try again.');
+                setError(localize('login.error.timeout'));
             } else {
-                setError(err?.message || 'Failed to login.');
+                setError(err?.message || localize('login.error.failed'));
             }
         }
     }
 
     return (
         <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <h1 style={{ fontSize: 20, marginBottom: 12 }}>Login</h1>
+            <h1 style={{ fontSize: 20, marginBottom: 12 }}>{localize('login.title')}</h1>
             {error && (
                 <ErrorAlert message={error!} onDismiss={() => setError(null)} />
             )}
             <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
-                <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
-                <button type="submit">Login</button>
+                <input placeholder={localize('login.usernamePlaceholder')} value={username} onChange={e => setUsername(e.target.value)} required />
+                <button type="submit">{localize('login.submit')}</button>
             </form>
-            <p> No account? <Link to="/register">Create one</Link> </p>
+            <p> {localize('login.noAccountPrefix')} <Link to="/register">{localize('login.createOneLink')}</Link> </p>
         </div>
     );
 }

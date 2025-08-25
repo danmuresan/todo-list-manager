@@ -5,6 +5,7 @@ import { getHeaders } from '../../utils/header-utils';
 import ErrorAlert from '../components/ErrorAlert';
 import type { TodoItem, TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
+import { localize } from '../../localization/i18n';
 
 const {
     host,
@@ -26,6 +27,19 @@ export default function TodoItemView() {
     const navigate = useNavigate();
 
     const cachedAuthToken = useMemo(() => getCachedAuthToken(), []);
+
+    const stateLabel = (state: TodoItem['state']) => {
+        switch (state) {
+            case 'TODO':
+                return localize('todo.state.todo');
+            case 'ONGOING':
+                return localize('todo.state.ongoing');
+            case 'DONE':
+                return localize('todo.state.done');
+            default:
+                return state;
+        }
+    };
 
     useEffect(() => {
         if (!cachedAuthToken) {
@@ -57,7 +71,7 @@ export default function TodoItemView() {
 
                 setTodo(initialTodos.find(t => t.id === todoId) || null);
             } catch (e: any) {
-                setError(e?.message || 'Failed to load todo.');
+                setError(e?.message || localize('errors.failedLoadTodo'));
             }
         })();
     }, [listId, todoId, navigate, cachedAuthToken]);
@@ -84,12 +98,11 @@ export default function TodoItemView() {
                     }
                 }
             } catch (e: any) {
-                setError(e?.message || 'Failed to refresh todo.');
+                setError(e?.message || localize('errors.failedRefreshTodo'));
             }
         };
 
-
-        const onError = () => setError('Realtime connection lost. Retrying…');
+    const onError = () => setError(localize('errors.realtimeLost'));
 
         eventSource.addEventListener('todoUpdated', onAnyListChange);
         eventSource.addEventListener('todoCreated', onAnyListChange);
@@ -111,7 +124,7 @@ export default function TodoItemView() {
                 body: JSON.stringify({ transitionItem })
             });
         } catch (e: any) {
-            setError(e?.message || 'Failed to update todo state.');
+            setError(e?.message || localize('errors.failedUpdateTodo'));
         }
     }
 
@@ -119,7 +132,7 @@ export default function TodoItemView() {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
-        
+
         try {
             await fetch(
                 `${host}${todoItemEndpoint(list.id, todo.id)}`,
@@ -129,34 +142,39 @@ export default function TodoItemView() {
                 });
             navigate(`/home/${list.id}`);
         } catch (e: any) {
-            setError(e?.message || 'Failed to delete todo.');
+            setError(e?.message || localize('errors.failedDeleteTodo'));
         }
     }
 
     if (!todo) {
-        return <div style={{ padding: 16 }}>Loading…</div>;
+    return <div style={{ padding: 16 }}>{localize('todoItem.loading')}</div>;
     }
+
+        function handleBack() {
+            // Navigate back without changing state
+            navigate(list ? `/home/${list.id}` : '/lists');
+        }
 
     return (
         <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <button onClick={() => navigate(list ? `/home/${list.id}` : '/lists')}>← Back</button>
+            <button onClick={handleBack}>{localize('todoItem.back')}</button>
             <h1 style={{ fontSize: 20 }}>{todo.title}</h1>
             {error && (
                 <ErrorAlert message={error!} onDismiss={() => setError(null)} />
             )}
-            <p>State: <strong>{todo.state}</strong></p>
+            <p>{localize('todoItem.state.label')} <strong>{stateLabel(todo.state)}</strong></p>
             <div style={{ display: 'flex', gap: 8 }}>
                 {todo.state !== 'TODO' && (
                     <button onClick={() => transitionStateForTodoItem('previous')}>
-                        {todo.state === 'DONE' ? 'In Progress' : 'To Be Done'}
+                        {todo.state === 'DONE' ? localize('todo.transition.inProgress') : localize('todo.transition.toBeDone')}
                     </button>
                 )}
                 {todo.state !== 'DONE' && (
                     <button onClick={() => transitionStateForTodoItem('next')}>
-                        {todo.state === 'TODO' ? 'In Progress' : 'Mark Done'}
+                        {todo.state === 'TODO' ? localize('todo.transition.inProgress') : localize('todo.transition.markDone')}
                     </button>
                 )}
-                <button onClick={deleteTodoItem}>Delete</button>
+                <button onClick={deleteTodoItem}>{localize('todo.delete')}</button>
             </div>
         </div>
     );

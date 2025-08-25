@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { localize } from '../../localization/i18n';
 
 interface ErrorAlertProps {
     message: string;
@@ -46,7 +47,7 @@ export const ErrorAlert: React.FC<ErrorAlertProps> = ({ message, onDismiss, time
             <button
                 type="button"
                 onClick={onDismiss}
-                aria-label="Dismiss error"
+                aria-label={localize('common.dismiss.aria')}
                 style={{
                     marginLeft: 12,
                     background: 'transparent',
@@ -56,7 +57,7 @@ export const ErrorAlert: React.FC<ErrorAlertProps> = ({ message, onDismiss, time
                     fontSize: 14
                 }}
             >
-                Dismiss
+                {localize('common.dismiss')}
             </button>
         </div>
     );

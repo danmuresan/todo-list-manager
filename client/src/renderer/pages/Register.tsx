@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
+import { localize } from '../../localization/i18n';
 
 const { host, registerEndpoint } = getDefaultConfig().authService;
 
@@ -33,12 +34,12 @@ export default function RegisterUserPage() {
             clearTimeout(timeout);
 
             if (registerResponse.status === 409) {
-                setError('User exists. Try login.');
+                setError(localize('register.error.exists'));
                 return;
             }
 
             if (!registerResponse.ok) {
-                throw new Error(`Create failed: ${registerResponse.status}`);
+                throw new Error(`${localize('register.error.failedPrefix')}${registerResponse.status}`);
             }
 
             const user = await registerResponse.json();
@@ -54,23 +55,23 @@ export default function RegisterUserPage() {
             navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {
-                setError('Request timed out. Please check the server and try again.');
+                setError(localize('login.error.timeout'));
             } else {
-                setError(err?.message || 'Failed to create account.');
+                setError(err?.message || localize('register.error.failed'));
             }
         }
     }
 
     return (
         <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <button onClick={() => navigate('/')} style={{ marginBottom: 8 }}>← Back</button>
-            <h1 style={{ fontSize: 20, marginBottom: 12 }}>Create Account</h1>
+            <button onClick={() => navigate('/')} style={{ marginBottom: 8 }}>{localize('register.back')}</button>
+            <h1 style={{ fontSize: 20, marginBottom: 12 }}>{localize('register.title')}</h1>
             {error && (
                 <ErrorAlert message={error!} onDismiss={() => setError(null)} />
             )}
             <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
-                <input placeholder="Username" value={username} onChange={e => setUsername((e.target as HTMLInputElement).value)} required />
-                <button type="submit">Create</button>
+                <input placeholder={localize('register.usernamePlaceholder')} value={username} onChange={e => setUsername((e.target as HTMLInputElement).value)} required />
+                <button type="submit">{localize('register.submit')}</button>
             </form>
         </div>
     );

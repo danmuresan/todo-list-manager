@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
   "types": ["node", "jest", "@testing-library/jest-dom"],
+  "resolveJsonModule": true,
   "jsx": "react-jsx"
   },
   "include": ["src/**/*"],

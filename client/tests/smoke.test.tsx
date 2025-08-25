@@ -15,10 +15,10 @@ describe('client smoke test', () => {
         </Routes>
       </MemoryRouter>
     );
-  const heading = screen.getByRole('heading', { name: 'Login' });
-  const helper = screen.getByText('No account?');
-  expect(heading).toBeTruthy();
-  expect(helper).toBeTruthy();
+	const heading = screen.getByRole('heading', { name: 'Login' });
+	const helper = screen.getByText('No account?');
+	expect(heading).toBeTruthy();
+	expect(helper).toBeTruthy();
   });
 
   test('renders Register route', () => {
@@ -31,9 +31,9 @@ describe('client smoke test', () => {
       </MemoryRouter>
     );
 
-  const title = screen.getByText('Create Account');
-  const btn = screen.getByRole('button', { name: 'Create' });
-  expect(title).toBeTruthy();
-  expect(btn).toBeTruthy();
+	const title = screen.getByText('Create Account');
+	const btn = screen.getByRole('button', { name: 'Create' });
+	expect(title).toBeTruthy();
+	expect(btn).toBeTruthy();
   });
 });
