@@ -27,22 +27,37 @@ export default function LoginPage() {
         try {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000);
-            const res = await fetch(`${host}${authorizeEndpoint}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }), signal: controller.signal
+
+            const authorizeResponse = await fetch(
+				`${host}${authorizeEndpoint}`,
+				{
+                	method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username }),
+					signal: controller.signal
             });
+
             clearTimeout(timeout);
-            if (res.status === 401) {
+
+            if (authorizeResponse.status === 401) {
                 setError('No user found. Please create an account.');
                 return;
             }
-            if (!res.ok) {
-                throw new Error(`Login failed: ${res.status}`);
+
+            if (!authorizeResponse.ok) {
+                throw new Error(`Login failed: ${authorizeResponse.status}`);
             }
-            const user = await res.json();
+
+            const user = await authorizeResponse.json();
+
+			// cache token and username
             localStorage.setItem('token', user.token);
-            // Persist username for display on Home and easy logout UX
             localStorage.setItem('username', username);
+
+			// signal main window to resize as login completed
             window.electronAPI?.loginWindowCompleted();
+
+			// navigate to lists management page
             navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {

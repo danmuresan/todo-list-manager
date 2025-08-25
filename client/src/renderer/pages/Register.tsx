@@ -19,21 +19,38 @@ export default function RegisterUserPage() {
         try {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000);
-            const res = await fetch(`${host}${registerEndpoint}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }), signal: controller.signal
-            });
+
+            const registerResponse = await fetch(
+				`${host}${registerEndpoint}`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username }),
+					signal: controller.signal
+				}
+			);
+
             clearTimeout(timeout);
-            if (res.status === 409) {
+
+            if (registerResponse.status === 409) {
                 setError('User exists. Try login.');
                 return;
             }
-            if (!res.ok) {
-                throw new Error(`Create failed: ${res.status}`);
+
+            if (!registerResponse.ok) {
+                throw new Error(`Create failed: ${registerResponse.status}`);
             }
-            const user = await res.json();
+
+            const user = await registerResponse.json();
+
+			// cache token and username
             localStorage.setItem('token', user.token);
             localStorage.setItem('username', username);
+
+			// signal main window to resize as login completed
             window.electronAPI?.loginWindowCompleted();
+
+			// navigate to lists management page
             navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {

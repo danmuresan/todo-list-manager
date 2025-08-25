@@ -7,6 +7,9 @@ interface ErrorAlertProps {
     className?: string;
 }
 
+/**
+ * Generic error alert banner component (manually and auto-disimissible).
+ */
 export const ErrorAlert: React.FC<ErrorAlertProps> = ({ message, onDismiss, timeoutMs = 5000, className }) => {
     useEffect(() => {
         if (timeoutMs <= 0) {

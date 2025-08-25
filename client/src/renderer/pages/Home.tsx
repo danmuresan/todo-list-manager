@@ -6,6 +6,7 @@ import ErrorAlert from '../components/ErrorAlert';
 import type { TodoItem, TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
 import UserHeader from '../components/UserHeader';
+import { writeTextToClipboard, buildInviteText } from '../../utils/clipboard-utils';
 
 const { 
     host,
@@ -24,6 +25,7 @@ export default function Home() {
     const [todos, setTodos] = useState<TodoItem[]>([]);
     const [title, setTitle] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
     const { listId } = useParams();
 
@@ -55,6 +57,7 @@ export default function Home() {
                     getHeaders(token)
                 ).then(r => r.json());
 
+                // Find the selected list
                 const selected = lists.find(l => l.id === listId) || null;
                 if (!selected) {
                     setError('You are not a member of this list or it does not exist.');
@@ -64,11 +67,11 @@ export default function Home() {
                 setList(selected);
 
                 // Load todos for the selected list
-                const data: TodoItem[] = await fetch(
+                const todoItemsFromList: TodoItem[] = await fetch(
                     `${host}${todoItemEndpoint(selected.id)}`,
                     getHeaders(token)
-                ).then(r => r.json());
-                setTodos(data);
+                ).then(response => response.json());
+                setTodos(todoItemsFromList);
             } catch (e: any) {
                 setError(e?.message || 'Failed to load todos.');
             }
@@ -79,10 +82,12 @@ export default function Home() {
         if (!list) {
             return;
         }
+
         const token = getCachedAuthToken();
         if (!token) {
             return;
         }
+
         const eventSource = new EventSource(`${host}${todoListUpdatesListenerEndpoint(list.id, token)}`);
         const onReloadRequested = async () => {
             try {
@@ -95,6 +100,7 @@ export default function Home() {
                 setError(e?.message || 'Failed to refresh todos.');
             }
         };
+        
         const onError = () => setError('Realtime connection lost. Retrying…');
 
         eventSource.addEventListener('todoCreated', onReloadRequested);
@@ -112,10 +118,12 @@ export default function Home() {
         if (!list || !token || !title.trim()) {
             return;
         }
+
         try {
             await fetch(`${host}${todoItemEndpoint(list.id)}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title })
             });
+
             setTitle('');
         } catch (e: any) {
             setError(e?.message || 'Failed to add todo.');
@@ -126,6 +134,7 @@ export default function Home() {
         if (!list || !token) {
             return;
         }
+        
         try {
             await fetch(
                 `${host}${todoItemEndpoint(list.id, todoItem.id)}`,
@@ -142,6 +151,7 @@ export default function Home() {
         if (!list || !token) {
             return;
         }
+
         try {
             await fetch(
                 `${host}${todoItemEndpoint(list.id, todoItem.id, true)}`,
@@ -152,6 +162,22 @@ export default function Home() {
                 });
         } catch (e: any) {
             setError(e?.message || 'Failed to update todo state.');
+        }
+    }
+
+    async function copyInviteLink() {
+        if (!list) {
+            return;
+        } 
+
+        const text = buildInviteText(list.name, list.key, `${host}${todoListsEndpoint}/join`);
+        const ok = writeTextToClipboard(text);
+
+        if (ok) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } else {
+            setError('Clipboard is unavailable in this environment.');
         }
     }
 
@@ -190,7 +216,11 @@ export default function Home() {
 
             {/* Pinned bottom button to allow joining a different list */}
             <div style={{ position: 'fixed', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-                <button style={{ pointerEvents: 'auto' }} onClick={() => navigate('/lists')}>Join a different list</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'auto' }}>
+                    <button onClick={() => navigate('/lists')}>Join a different list</button>
+                        <button onClick={copyInviteLink} disabled={!list}>Copy invite key</button>
+                    {copied && <span style={{ fontSize: 12, color: '#2a7' }}>Copied!</span>}
+                </div>
             </div>
         </div>
     );

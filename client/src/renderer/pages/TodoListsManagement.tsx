@@ -20,7 +20,7 @@ export default function TodoListsManagementPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-    const token = getCachedAuthToken();
+        const token = getCachedAuthToken();
         if (!token) {
             navigate('/');
             return;
@@ -43,20 +43,20 @@ export default function TodoListsManagementPage() {
     async function onCreate(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
-    const token = getCachedAuthToken();
+        const token = getCachedAuthToken();
 
         if (!token || !createName.trim()) {
              return;
         }
 
         try {
-            const list: TodoList = await fetch(`${host}${todoListsEndpoint}`, {
+            const todoList: TodoList = await fetch(`${host}${todoListsEndpoint}`, {
                 method: 'POST',
                 ...getHeaders(token, 'application/json'),
                 body: JSON.stringify({ name: createName.trim() })
             }).then(response => response.json());
 
-            navigate(`/home/${list.id}`);
+            navigate(`/home/${todoList.id}`);
         } catch (e: any) {
             setError(e?.message || 'Failed to create list.');
         }

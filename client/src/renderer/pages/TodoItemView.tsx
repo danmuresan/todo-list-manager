@@ -74,10 +74,10 @@ export default function TodoItemView() {
                 const todoItems: TodoItem[] = await fetch(
                     `${host}${todoItemEndpoint(list.id)}`,
                     getHeaders(cachedAuthToken)
-                ).then(r => r.json());
+                ).then(response => response.json());
 
                 if (todo?.id) {
-                    const match = todoItems.find(t => t.id === todo.id) || null;
+                    const match = todoItems.find(todoItem => todoItem.id === todo.id) || null;
                     setTodo(match);
                     if (!match) {
                         navigate(`/home/${list.id}`);
@@ -91,9 +91,9 @@ export default function TodoItemView() {
 
         const onError = () => setError('Realtime connection lost. Retrying…');
 
-    eventSource.addEventListener('todoUpdated', onAnyListChange);
-    eventSource.addEventListener('todoCreated', onAnyListChange);
-    eventSource.addEventListener('todoDeleted', onAnyListChange);
+        eventSource.addEventListener('todoUpdated', onAnyListChange);
+        eventSource.addEventListener('todoCreated', onAnyListChange);
+        eventSource.addEventListener('todoDeleted', onAnyListChange);
         eventSource.addEventListener('error', onError as EventListener);
 
         return () => eventSource.close();
@@ -103,6 +103,7 @@ export default function TodoItemView() {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
+
         try {
             await fetch(`${host}${todoItemEndpoint(list.id, todo.id, true)}`, {
                 method: 'POST',
@@ -118,8 +119,14 @@ export default function TodoItemView() {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
+        
         try {
-            await fetch(`${host}${todoItemEndpoint(list.id, todo.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cachedAuthToken}` } });
+            await fetch(
+                `${host}${todoItemEndpoint(list.id, todo.id)}`,
+                { 
+                    method: 'DELETE',
+                    ...getHeaders(cachedAuthToken)
+                });
             navigate(`/home/${list.id}`);
         } catch (e: any) {
             setError(e?.message || 'Failed to delete todo.');

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
 import fs from 'fs';
 import { Channels } from '../shared/ipc';
 import path from 'path';
@@ -85,3 +85,17 @@ ipcMain.on(Channels.rendererToMainAsync.loginWindowCompleted, handleLoginComplet
 ipcMain.on('loginWindowCompleted', handleLoginCompleted);
 
 // (no-op helpers currently)
+
+// Clipboard fallback handler: allows renderer/preload to request a write when direct access fails
+ipcMain.on('writeClipboardText', (_ev, text: unknown) => {
+    if (typeof text !== 'string') {
+        console.warn('[Main] writeClipboardText ignored: payload not a string');
+        return;
+    }
+    try {
+        clipboard.writeText(text);
+        console.log('[Main] clipboard.writeText success via IPC');
+    } catch (err) {
+        console.error('[Main] clipboard.writeText failed via IPC', err);
+    }
+});

@@ -20,15 +20,6 @@
       }
     },
     {
-      "type": "node",
-      "request": "launch",
-      "name": "Server: Dev (ts-node-dev)",
-      "cwd": "${workspaceFolder}/server",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "console": "integratedTerminal"
-    },
-    {
       "type": "chrome",
       "request": "attach",
       "name": "Attach: Electron Renderer (9222)",
@@ -41,6 +32,15 @@
         "webpack:///src/*": "${webRoot}/src/*",
         "*/dist/*": "${webRoot}/*"
       }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Server: Dev (ts-node-dev)",
+      "cwd": "${workspaceFolder}/server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal"
     }
   ],
   "compounds": [
