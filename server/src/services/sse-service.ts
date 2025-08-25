@@ -1,10 +1,18 @@
 import { Response } from 'express';
+import type { ISseService } from './abstractions/sse-service-abstraction';
+import type { ILogger } from './abstractions/logger-abstraction';
+import { logger as defaultLogger } from './logger';
 
 type SSEClient = Response;
 type Primitive = string | number | boolean | null;
 
-class SseService {
+class SseService implements ISseService {
     private clientsByList: Map<string, Set<SSEClient>> = new Map();
+    private readonly logger: ILogger;
+
+    public constructor(logger: ILogger = defaultLogger) {
+        this.logger = logger;
+    }
 
     public subscribe(listId: string, res: SSEClient): void {
         if (!this.clientsByList.has(listId)) {
@@ -20,8 +28,7 @@ class SseService {
                 res.write(`event: ping\n`);
                 res.write(`data: ${Date.now()}\n\n`);
             } catch (err) {
-                // eslint-disable-next-line no-console
-                console.error('[SSE] ping write error:', (err as Error).message);
+                this.logger.error?.('[SSE] ping write error:', (err as Error).message);
             }
         }, 25000);
 
@@ -45,8 +52,7 @@ class SseService {
                 res.write(`event: ${event}\n`);
                 res.write(`data: ${data}\n\n`);
             } catch (err) {
-                // eslint-disable-next-line no-console
-                console.error('[SSE] broadcast write error:', (err as Error).message);
+                this.logger.error?.('[SSE] broadcast write error:', (err as Error).message);
             }
         }
     }

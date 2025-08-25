@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { newId } from '../helpers/id-generator-helper';
-import { authMiddleware, JwtPayload } from '../auth';
-import type { Services } from '../di/container';
+import { createAuthMiddleware, JwtPayload } from '../auth';
+import type { AppDependencies } from '../di/di-container';
 import { TodoItem, TodoItemState, TodoItemStateTransition } from '../models/todo-item';
 import type { Router as ExpressRouter } from 'express';
+import { logger } from '../services/logger';
 import type {
     GetTodosResponse,
     CreateTodoRequestBody,
@@ -13,7 +14,11 @@ import type {
     DeleteTodoResponse,
 } from '../models/http/todos';
 
-export default function createTodosRouter(services: Services): ExpressRouter {
+/**
+ * Creates routes for managing todo items.
+ * @param deps service dependencies.
+ */
+export default function createTodoItemRouter(deps: AppDependencies): ExpressRouter {
     const router = Router();
 
     /**
@@ -32,23 +37,24 @@ export default function createTodosRouter(services: Services): ExpressRouter {
         return direction === 'forward' ? rules.nextState ?? null : rules.previousState ?? null;
     }
 
-    function isMember(listId: string, userId: string, services: Services): boolean {
-        const db = services.storage.getDB();
+    function isMember(listId: string, userId: string, services: AppDependencies): boolean {
+        const db = services.storage.getStorageData();
         const list = db.lists.find(l => l.id === listId);
         return !!list && list.members.includes(userId);
     }
 
+    const auth = createAuthMiddleware(deps.logger);
     router.use((req, res, next): void => {
-        authMiddleware(req as Request & { user?: JwtPayload }, res, next);
+        auth(req as Request & { user?: JwtPayload }, res, next);
     });
 
     router.get('/:listId', (req: Request & { user?: JwtPayload }, res: Response<GetTodosResponse>): Response => {
         const { listId } = req.params;
         const userId = req.user!.id;
-        if (!isMember(listId, userId, services)) {
+        if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
-        const db = services.storage.getDB();
+        const db = deps.storage.getStorageData();
         const todos = db.todos.filter(t => t.listId === listId);
         return res.json(todos);
     });
@@ -60,17 +66,17 @@ export default function createTodosRouter(services: Services): ExpressRouter {
         if (!title) {
             return res.status(400).json({ error: 'Title required' });
         }
-        if (!isMember(listId, userId, services)) {
+        if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
         const id = newId();
         const now = new Date().toISOString();
         const todo: TodoItem = { id, listId, title, state: TodoItemState.ToDo, createdBy: userId, updatedAt: now };
-        services.storage.saveDB((data) => {
+        deps.storage.updateStorageData((data) => {
             data.todos.push(todo);
             return data;
         });
-        services.sse.broadcast(listId, 'todoCreated', { todo });
+        deps.sse.broadcast(listId, 'todoCreated', { todo });
         return res.status(201).json(todo);
     });
 
@@ -78,7 +84,7 @@ export default function createTodosRouter(services: Services): ExpressRouter {
         const { listId, todoId } = req.params;
         const { direction } = (req.body || {}) as TransitionRequestBody;
         const userId = req.user!.id;
-        if (!isMember(listId, userId, services)) {
+        if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
         if (!direction || !['forward', 'back'].includes(direction)) {
@@ -87,7 +93,7 @@ export default function createTodosRouter(services: Services): ExpressRouter {
 
         let updated: TodoItem | undefined;
         try {
-            services.storage.saveDB((data) => {
+            deps.storage.updateStorageData((data) => {
                 const todo = data.todos.find(t => t.id === todoId && t.listId === listId);
                 if (!todo) {
                     throw new Error('NotFound');
@@ -103,8 +109,7 @@ export default function createTodosRouter(services: Services): ExpressRouter {
             });
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
-            // eslint-disable-next-line no-console
-            console.error('[TodosRouter] transition error:', message);
+            logger.error?.('[TodosRouter] transition error:', message);
             if (message === 'NotFound') {
                 return res.status(404).json({ error: 'Todo not found' });
             }
@@ -117,19 +122,19 @@ export default function createTodosRouter(services: Services): ExpressRouter {
         if (!updated) {
             return res.status(404).json({ error: 'Todo not found' });
         }
-        services.sse.broadcast(listId, 'todoUpdated', { todo: updated });
+        deps.sse.broadcast(listId, 'todoUpdated', { todo: updated });
         return res.json(updated);
     });
 
     router.delete('/:listId/:todoId', (req: Request & { user?: JwtPayload }, res: Response<DeleteTodoResponse>): Response => {
         const { listId, todoId } = req.params;
         const userId = req.user!.id;
-        if (!isMember(listId, userId, services)) {
+        if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
         let removed = false;
-        services.storage.saveDB((data) => {
+        deps.storage.updateStorageData((data) => {
             const idx = data.todos.findIndex(t => t.id === todoId && t.listId === listId);
             if (idx === -1) {
                 return data;
@@ -142,7 +147,7 @@ export default function createTodosRouter(services: Services): ExpressRouter {
         if (!removed) {
             return res.status(404).json({ error: 'Todo not found' });
         }
-        services.sse.broadcast(listId, 'todoDeleted', { todoId });
+        deps.sse.broadcast(listId, 'todoDeleted', { todoId });
         return res.status(204).send();
     });
 

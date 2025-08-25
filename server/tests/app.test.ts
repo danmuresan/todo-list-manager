@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app';
-import { resetDB } from '../src/storage';
+import { resetDB } from './helpers/storage-utils';
 
 describe('Auth', () => {
     beforeEach(() => resetDB());

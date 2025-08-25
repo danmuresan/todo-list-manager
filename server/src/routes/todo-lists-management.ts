@@ -1,15 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { newId, newKey } from '../helpers/id-generator-helper';
-import { authMiddleware, JwtPayload } from '../auth';
-import type { Services } from '../di/container';
+import { createAuthMiddleware, JwtPayload } from '../auth';
+import type { AppDependencies } from '../di/di-container';
 import type { CreateListRequestPayload, CreateListResponse, JoinListRequestPayload, JoinListResponse, GetListsResponse } from '../models/http/lists';
 
-export default function createListsRouter(services: Services): ReturnType<typeof Router> {
+/**
+ * Creates routes for managing todo lists.
+ * @param deps service dependencies.
+ */
+export default function createTodoListsManagementRouter(deps: AppDependencies): ReturnType<typeof Router> {
     const router = Router();
 
     // Attach auth middleware for all list routes
+    const auth = createAuthMiddleware(deps.logger);
     router.use((req, res, next): void => {
-        authMiddleware(req as Request & { user?: JwtPayload }, res, next);
+        auth(req as Request & { user?: JwtPayload }, res, next);
     });
 
     router.post('/', (req: Request & { user?: JwtPayload }, res: Response<CreateListResponse>): Response => {
@@ -21,36 +26,36 @@ export default function createListsRouter(services: Services): ReturnType<typeof
         const key = newKey(10);
         const userId = req.user!.id;
         const list = { id, name, key, members: [userId] };
-        services.storage.saveDB((data) => {
+        deps.storage.updateStorageData((data) => {
             data.lists.push(list);
             return data;
         });
-        services.sse.broadcast(list.id, 'listCreated', { list });
+        deps.sse.broadcast(list.id, 'listCreated', { list });
         return res.status(201).json(list);
     });
 
     router.post('/join', (req: Request & { user?: JwtPayload }, res: Response<JoinListResponse>): Response => {
         const { key } = (req.body || {}) as JoinListRequestPayload;
         const userId = req.user!.id;
-        const db = services.storage.getDB();
+        const db = deps.storage.getStorageData();
         const list = db.lists.find(l => l.key === key);
         if (!list) {
             return res.status(404).json({ error: 'List not found' });
         }
-        services.storage.saveDB((data) => {
+        deps.storage.updateStorageData((data) => {
             const l = data.lists.find(ll => ll.id === list.id)!;
             if (!l.members.includes(userId)) {
                 l.members.push(userId);
             }
             return data;
         });
-        services.sse.broadcast(list.id, 'memberJoined', { userId });
+        deps.sse.broadcast(list.id, 'memberJoined', { userId });
         return res.json({ id: list.id, name: list.name, key: list.key });
     });
 
     router.get('/', (req: Request & { user?: JwtPayload }, res: Response<GetListsResponse>): Response => {
         const userId = req.user!.id;
-        const db = services.storage.getDB();
+        const db = deps.storage.getStorageData();
         const lists = db.lists.filter(l => l.members.includes(userId));
         return res.json(lists);
     });
@@ -58,7 +63,7 @@ export default function createListsRouter(services: Services): ReturnType<typeof
     router.get('/:listId/stream', (req: Request & { user?: JwtPayload }, res: Response): Response | void => {
         const { listId } = req.params as { listId: string };
         const userId = req.user!.id;
-        const db = services.storage.getDB();
+        const db = deps.storage.getStorageData();
         const list = db.lists.find(l => l.id === listId);
         if (!list) {
             return res.status(404).json({ error: 'List not found' });
@@ -73,7 +78,7 @@ export default function createListsRouter(services: Services): ReturnType<typeof
         const maybeFlusher = res as Partial<{ flushHeaders: () => void }>;
         maybeFlusher.flushHeaders?.();
 
-        services.sse.subscribe(listId, res);
+        deps.sse.subscribe(listId, res);
         return undefined;
     });
 
