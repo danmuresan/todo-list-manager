@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
@@ -22,7 +22,7 @@ export default function LoginPage() {
         window.electronAPI?.setupMainWindowBoundsForLogin();
     }, []);
 
-    async function onSubmit(e: React.FormEvent) {
+    const onSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         try {
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 setError(err?.message || localize('login.error.failed'));
             }
         }
-    }
+    }, [navigate, username, authorizeEndpoint, host]);
 
     return (
         <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>

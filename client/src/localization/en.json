@@ -20,6 +20,7 @@
   "register.error.exists": { "value": "User exists. Try login.", "description": "Shown when user already exists" },
   "register.error.failedPrefix": { "value": "Create failed: ", "description": "Prefix for status-based create failures" },
   "register.error.failed": { "value": "Failed to create account.", "description": "Generic create failure" },
+  "register.error.timeout": { "value": "Request timed out. Please check the server and try again.", "description": "Shown when register request times out" },
   "lists.title": { "value": "Your Lists", "description": "Lists management title" },
   "lists.empty": { "value": "No lists yet. Create one or join with a key.", "description": "Shown when user has no lists" },
   "lists.join.placeholder": { "value": "Enter invite key to join", "description": "Join list input placeholder" },

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
@@ -127,7 +127,7 @@ export default function Home() {
 
     const authToken = useMemo(() => getCachedAuthToken(), [list]);
 
-    async function addTodoItem(e: React.FormEvent) {
+    const addTodoItem = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!list || !authToken || !title.trim()) return;
 
@@ -141,9 +141,9 @@ export default function Home() {
         } catch (e: any) {
             setError(e?.message || localize('errors.failedAddTodo'));
         }
-    }
+    }, [list?.id, authToken, title]);
 
-    async function deleteTodoItem(todoItem: TodoItem) {
+    const deleteTodoItem = useCallback(async (todoItem: TodoItem) => {
         if (!list || !authToken) {
             return;
         }
@@ -155,9 +155,9 @@ export default function Home() {
         } catch (e: any) {
             setError(e?.message || localize('errors.failedDeleteTodo'));
         }
-    }
+    }, [list?.id, authToken]);
 
-    async function transition(todoItem: TodoItem, transitionItem: 'next' | 'previous') {
+    const transition = useCallback(async (todoItem: TodoItem, transitionItem: 'next' | 'previous') => {
         if (!list || !authToken) {
             return;
         }
@@ -172,9 +172,9 @@ export default function Home() {
         } catch (e: any) {
             setError(e?.message || localize('errors.failedUpdateTodo'));
         }
-    }
+    }, [list?.id, authToken]);
 
-    async function copyInviteLink() {
+    const copyInviteLink = useCallback(async () => {
         if (!list) {
             return;
         }
@@ -192,12 +192,16 @@ export default function Home() {
         } else {
             setError(localize('errors.clipboardUnavailable'));
         }
-    }
+    }, [list?.name, list?.key]);
+
+    const openLists = useCallback(() => navigate('/lists'), [navigate]);
+
+    const dismissError = useCallback(() => setError(null), []);
 
     return (
         <div style={{ padding: 16, maxWidth: 800, margin: '0 auto', fontFamily: 'system-ui' }}>
             <UserHeader title={list ? `${list.name} – ${localize('app.title.todos')}` : localize('app.title.todos')} />
-            {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
+            {error && <ErrorAlert message={error} onDismiss={dismissError} />}
 
             <form
                 onSubmit={addTodoItem}
@@ -240,7 +244,7 @@ export default function Home() {
 
             <div style={{ position: 'fixed', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'auto' }}>
-                    <button onClick={() => navigate('/lists')}>{localize('home.joinDifferent')}</button>
+                    <button onClick={openLists}>{localize('home.joinDifferent')}</button>
                     <button onClick={copyInviteLink} disabled={!list}>{localize('home.copyInviteKey')}</button>
                     {copied && <span style={{ fontSize: 12, color: '#2a7' }}>{localize('home.copied')}</span>}
                 </div>

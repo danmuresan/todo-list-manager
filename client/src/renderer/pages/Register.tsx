@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
@@ -14,7 +14,7 @@ export default function RegisterUserPage() {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    async function onSubmit(e: React.FormEvent) {
+    const onSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         try {
@@ -55,19 +55,22 @@ export default function RegisterUserPage() {
             navigate('/lists');
         } catch (err: any) {
             if (err?.name === 'AbortError') {
-                setError(localize('login.error.timeout'));
+                setError(localize('register.error.timeout'));
             } else {
                 setError(err?.message || localize('register.error.failed'));
             }
         }
-    }
+    }, [navigate, username, registerEndpoint, host]);
+
+    const handleDismissError = useCallback(() => setError(null), []);
+    const goBack = useCallback(() => navigate('/'), [navigate]);
 
     return (
         <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <button onClick={() => navigate('/')} style={{ marginBottom: 8 }}>{localize('register.back')}</button>
+            <button onClick={goBack} style={{ marginBottom: 8 }}>{localize('register.back')}</button>
             <h1 style={{ fontSize: 20, marginBottom: 12 }}>{localize('register.title')}</h1>
             {error && (
-                <ErrorAlert message={error!} onDismiss={() => setError(null)} />
+                <ErrorAlert message={error!} onDismiss={handleDismissError} />
             )}
             <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
                 <input placeholder={localize('register.usernamePlaceholder')} value={username} onChange={e => setUsername((e.target as HTMLInputElement).value)} required />

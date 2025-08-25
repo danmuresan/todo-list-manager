@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
 import { localize } from '../../localization/i18n';
 
 /**
@@ -9,12 +10,12 @@ export default function UserHeader({ title }: { title: string }) {
   const navigate = useNavigate();
   const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     (window as any).electronAPI?.setupMainWindowBoundsForLogin();
     navigate('/');
-  }
+  }, [navigate]);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

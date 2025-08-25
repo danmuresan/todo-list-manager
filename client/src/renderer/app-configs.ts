@@ -1,5 +1,8 @@
 import { ConfigSettings } from "./config-settings";
 
+/**
+ * Get default configuration object (for local development).
+ */
 export function getDefaultConfig(): ConfigSettings {
     return {
         todoListService: {

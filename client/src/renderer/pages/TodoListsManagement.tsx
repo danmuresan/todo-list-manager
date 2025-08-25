@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
@@ -41,7 +41,7 @@ export default function TodoListsManagementPage() {
         })();
     }, [navigate]);
 
-    async function onCreate(e: React.FormEvent) {
+    const onCreate = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         const token = getCachedAuthToken();
@@ -61,9 +61,9 @@ export default function TodoListsManagementPage() {
         } catch (e: any) {
             setError(e?.message || 'Failed to create list.');
         }
-    }
+    }, [createName, navigate, host, todoListsEndpoint]);
 
-    async function onJoin(e: React.FormEvent) {
+    const onJoin = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         const token = getCachedAuthToken();
@@ -83,17 +83,20 @@ export default function TodoListsManagementPage() {
         } catch (e: any) {
             setError(e?.message || 'Failed to join list.');
         }
-    }
+    }, [joinKey, navigate, host, todoListsEndpoint]);
+
+    const openList = useCallback((id: string) => navigate(`/home/${id}`), [navigate]);
+    const dismissError = useCallback(() => setError(null), []);
 
     return (
         <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
             <UserHeader title={localize('lists.title')} />
-            {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
+            {error && <ErrorAlert message={error} onDismiss={dismissError} />}
             <ul style={{ listStyle: 'none', padding: 0, marginBottom: 16 }}>
                 {lists.map(list => (
                     <li key={list.id} style={{ padding: 8, borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>{list.name}</span>
-                        <button onClick={() => navigate(`/home/${list.id}`)}>{localize('lists.open')}</button>
+                        <button onClick={() => openList(list.id)}>{localize('lists.open')}</button>
                     </li>
                 ))}
                 {lists.length === 0 && (

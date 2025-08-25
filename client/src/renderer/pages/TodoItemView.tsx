@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
@@ -103,7 +103,6 @@ export default function TodoItemView() {
         };
 
     const onError = () => setError(localize('errors.realtimeLost'));
-
         eventSource.addEventListener('todoUpdated', onAnyListChange);
         eventSource.addEventListener('todoCreated', onAnyListChange);
         eventSource.addEventListener('todoDeleted', onAnyListChange);
@@ -112,7 +111,7 @@ export default function TodoItemView() {
         return () => eventSource.close();
     }, [list, cachedAuthToken, todo?.id, navigate]);
 
-    async function transitionStateForTodoItem(transitionItem: 'next' | 'previous') {
+    const transitionStateForTodoItem = useCallback(async (transitionItem: 'next' | 'previous') => {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
@@ -126,9 +125,9 @@ export default function TodoItemView() {
         } catch (e: any) {
             setError(e?.message || localize('errors.failedUpdateTodo'));
         }
-    }
+    }, [list?.id, todo?.id, cachedAuthToken]);
 
-    async function deleteTodoItem() {
+    const deleteTodoItem = useCallback(async () => {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
@@ -144,33 +143,38 @@ export default function TodoItemView() {
         } catch (e: any) {
             setError(e?.message || localize('errors.failedDeleteTodo'));
         }
-    }
+    }, [list?.id, todo?.id, cachedAuthToken, navigate]);
 
-    if (!todo) {
-    return <div style={{ padding: 16 }}>{localize('todoItem.loading')}</div>;
-    }
 
-        function handleBack() {
+        const handleBack = useCallback(() => {
             // Navigate back without changing state
             navigate(list ? `/home/${list.id}` : '/lists');
-        }
+        }, [navigate, list?.id]);
+
+        const handlePrevious = useCallback(() => transitionStateForTodoItem('previous'), [transitionStateForTodoItem]);
+        const handleNext = useCallback(() => transitionStateForTodoItem('next'), [transitionStateForTodoItem]);
+    const dismissError = useCallback(() => setError(null), []);
+
+    if (!todo) {
+        return <div style={{ padding: 16 }}>{localize('todoItem.loading')}</div>;
+    }
 
     return (
         <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
             <button onClick={handleBack}>{localize('todoItem.back')}</button>
             <h1 style={{ fontSize: 20 }}>{todo.title}</h1>
             {error && (
-                <ErrorAlert message={error!} onDismiss={() => setError(null)} />
+                <ErrorAlert message={error!} onDismiss={dismissError} />
             )}
             <p>{localize('todoItem.state.label')} <strong>{stateLabel(todo.state)}</strong></p>
             <div style={{ display: 'flex', gap: 8 }}>
                 {todo.state !== 'TODO' && (
-                    <button onClick={() => transitionStateForTodoItem('previous')}>
+                    <button onClick={handlePrevious}>
                         {todo.state === 'DONE' ? localize('todo.transition.inProgress') : localize('todo.transition.toBeDone')}
                     </button>
                 )}
                 {todo.state !== 'DONE' && (
-                    <button onClick={() => transitionStateForTodoItem('next')}>
+                    <button onClick={handleNext}>
                         {todo.state === 'TODO' ? localize('todo.transition.inProgress') : localize('todo.transition.markDone')}
                     </button>
                 )}
