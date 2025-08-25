@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { newId } from '../helpers/id-generator-helper';
 import { createAuthMiddleware } from '../auth';
 import type { AppDependencies } from '../di/di-container';

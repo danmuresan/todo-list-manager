@@ -1,8 +1,8 @@
 import type { Router } from 'express';
 import { storageService } from '../services/storage-service';
-import { sse } from '../services/sse-service';
+import { sse } from '../services/sse-connection-service';
 import type { IStorageService } from '../services/abstractions/storage-service-abstraction';
-import type { ISseService } from '../services/abstractions/sse-service-abstraction';
+import type { ISseConnectionService } from '../services/abstractions/sse-service-connection-abstraction';
 import type { ILogger } from '../services/abstractions/logger-abstraction';
 import { logger } from '../services/logger';
 import { DIContainerManager } from './di-container-manager';
@@ -17,7 +17,7 @@ import type { User } from '../models/user';
  */
 export interface AppDependencies {
     storage: IStorageService;
-    sse: ISseService;
+    sse: ISseConnectionService;
     logger: ILogger;
     todoItemsRepo: StorageRepository<TodoItem>;
     todoListsRepo: StorageRepository<TodoList>;
@@ -29,7 +29,7 @@ const manager: IDIContainerManager = new DIContainerManager();
 
 // Register services
 manager.register<IStorageService>('storage', () => storageService);
-manager.register<ISseService>('sse', () => sse);
+manager.register<ISseConnectionService>('sse', () => sse);
 manager.register<ILogger>('logger', () => logger);
 manager.register<StorageRepository<TodoItem>>('todoItemsRepo', () => new StorageRepository<TodoItem>(storageService, (db) => db.todos));
 manager.register<StorageRepository<TodoList>>('todoListsRepo', () => new StorageRepository<TodoList>(storageService, (db) => db.lists));
@@ -42,7 +42,7 @@ manager.register<StorageRepository<User>>('usersRepo', () => new StorageReposito
 export function createDependenciesContainer(): AppDependencies {
     return {
         storage: manager.resolve<IStorageService>('storage'),
-        sse: manager.resolve<ISseService>('sse'),
+        sse: manager.resolve<ISseConnectionService>('sse'),
         logger: manager.resolve<ILogger>('logger'),
         todoItemsRepo: manager.resolve<StorageRepository<TodoItem>>('todoItemsRepo'),
         todoListsRepo: manager.resolve<StorageRepository<TodoList>>('todoListsRepo'),

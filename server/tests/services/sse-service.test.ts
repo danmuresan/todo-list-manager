@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import SseService from '../../src/services/sse-service';
+import SseConnectionService from '../../src/services/sse-connection-service';
 
 function createMockResponse() {
     const writes: string[] = [];
@@ -16,7 +16,7 @@ describe('SseService', () => {
     });
 
     test('subscribe writes connected comment and pings', () => {
-        const sse = new SseService({ error: jest.fn(), info: jest.fn() } as any);
+        const sse = new SseConnectionService({ error: jest.fn(), info: jest.fn() } as any);
         const { res, writes } = createMockResponse();
         sse.subscribe('list1', res);
         expect(writes.join('')).toContain(': connected');
@@ -26,7 +26,7 @@ describe('SseService', () => {
     });
 
     test('broadcast sends events to subscribed clients', () => {
-        const sse = new SseService({ error: jest.fn(), info: jest.fn() } as any);
+        const sse = new SseConnectionService({ error: jest.fn(), info: jest.fn() } as any);
         const { res, writes } = createMockResponse();
         sse.subscribe('list1', res);
         sse.broadcast('list1', 'todoCreated', { id: 't1' });

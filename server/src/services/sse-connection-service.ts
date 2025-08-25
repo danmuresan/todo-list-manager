@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import type { ISseService } from './abstractions/sse-service-abstraction';
+import type { ISseConnectionService } from './abstractions/sse-service-connection-abstraction';
 import type { ILogger } from './abstractions/logger-abstraction';
 import { logger as defaultLogger } from './logger';
 
@@ -9,7 +9,7 @@ type Primitive = string | number | boolean | null;
 /**
  * Server-Sent Events (SSE) service for managing SSE connections and broadcasting events.
  */
-class SseService implements ISseService {
+class SseConnectionService implements ISseConnectionService {
     private clientsByList: Map<string, Set<SSEClient>> = new Map();
     private readonly logger: ILogger;
 
@@ -61,6 +61,6 @@ class SseService implements ISseService {
     }
 }
 
-export const sse = new SseService();
-export default SseService;
+export const sse = new SseConnectionService();
+export default SseConnectionService;
 
