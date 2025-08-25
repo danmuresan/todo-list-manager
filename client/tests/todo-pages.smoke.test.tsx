@@ -3,7 +3,7 @@ import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globa
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Home from '../src/renderer/pages/Home';
-import TodoPage from '../src/renderer/pages/TodoItem';
+import TodoItem from '../src/renderer/pages/TodoItem';
 
 type MockResponse = { ok: true; status: number; json: () => Promise<any> };
 
@@ -111,7 +111,7 @@ describe('todo item management pages (smoke)', () => {
         render(
             <MemoryRouter initialEntries={[`/todo/${LIST_ID}/${TODO_ID}`]}>
                 <Routes>
-                    <Route path="/todo/:listId/:todoId" element={<TodoPage />} />
+                    <Route path="/todo/:listId/:todoId" element={<TodoItem />} />
                 </Routes>
             </MemoryRouter>
         );

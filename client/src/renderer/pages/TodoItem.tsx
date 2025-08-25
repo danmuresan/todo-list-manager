@@ -14,7 +14,10 @@ const {
 type Todo = { id: string; listId: string; title: string; state: 'TODO'|'ONGOING'|'DONE' };
 type List = { id: string; name: string; key: string };
 
-export default function TodoPage() {
+/**
+ * Todo item UI component
+ */
+export default function TodoItem() {
     const { listId, todoId } = useParams();
     const [list, setList] = useState<List | null>(null);
     const [todo, setTodo] = useState<Todo | null>(null);

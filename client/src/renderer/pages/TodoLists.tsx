@@ -10,6 +10,9 @@ type List = { id: string; name: string; key: string };
 
 function getToken() { return localStorage.getItem('token'); }
 
+/**
+ * TODO lists management page.
+ */
 export default function ListsPage() {
     const [lists, setLists] = useState<List[]>([]);
     const [createName, setCreateName] = useState('');
@@ -23,9 +26,14 @@ export default function ListsPage() {
             navigate('/');
             return;
         }
+
         (async () => {
             try {
-                const data: List[] = await fetch(`${host}${todoListsEndpoint}`, getHeaders(token)).then(r => r.json());
+                const data: List[] = await fetch(
+                    `${host}${todoListsEndpoint}`,
+                    getHeaders(token)
+                ).then(response => response.json());
+
                 setLists(data);
             } catch (e: any) {
                 setError(e?.message || 'Failed to load lists.');
@@ -37,13 +45,18 @@ export default function ListsPage() {
         e.preventDefault();
         setError(null);
         const token = getToken();
-        if (!token || !createName.trim()) { return; }
+
+        if (!token || !createName.trim()) {
+             return;
+        }
+
         try {
             const list: List = await fetch(`${host}${todoListsEndpoint}`, {
                 method: 'POST',
                 ...getHeaders(token, 'application/json'),
                 body: JSON.stringify({ name: createName.trim() })
-            }).then(r => r.json());
+            }).then(response => response.json());
+
             navigate(`/home/${list.id}`);
         } catch (e: any) {
             setError(e?.message || 'Failed to create list.');
@@ -54,13 +67,17 @@ export default function ListsPage() {
         e.preventDefault();
         setError(null);
         const token = getToken();
-        if (!token || !joinKey.trim()) { return; }
+        if (!token || !joinKey.trim()) {
+            return;
+        }
+
         try {
             const res: { id: string; name: string; key: string } = await fetch(`${host}${todoListsEndpoint}/join`, {
                 method: 'POST',
                 ...getHeaders(token, 'application/json'),
                 body: JSON.stringify({ key: joinKey.trim() })
-            }).then(r => r.json());
+            }).then(response => response.json());
+
             navigate(`/home/${res.id}`);
         } catch (e: any) {
             setError(e?.message || 'Failed to join list.');

@@ -16,6 +16,9 @@ type List = { id: string; name: string; key: string };
 
 function getCachedAuthToken() { return localStorage.getItem('token'); }
 
+/**
+ * Home page UI component (list of TODO items in a list)
+ */
 export default function Home() {
     const [list, setList] = useState<List | null>(null);
     const [todos, setTodos] = useState<Todo[]>([]);
