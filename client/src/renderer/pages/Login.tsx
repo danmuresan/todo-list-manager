@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
+import ErrorAlert from '../components/ErrorAlert';
 
 declare global {
   interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
@@ -13,6 +14,7 @@ const { host, authorizeEndpoint } = getDefaultConfig().authService;
  */
 export default function Login() {
     const [username, setUsername] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -21,22 +23,40 @@ export default function Login() {
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
-        const res = await fetch(`${host}${authorizeEndpoint}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
-        });
-        if (res.status === 401) {
-            alert('No user found. Please create an account.');
-            return;
+        setError(null);
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000);
+            const res = await fetch(`${host}${authorizeEndpoint}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }), signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (res.status === 401) {
+                setError('No user found. Please create an account.');
+                return;
+            }
+            if (!res.ok) {
+                throw new Error(`Login failed: ${res.status}`);
+            }
+            const user = await res.json();
+            localStorage.setItem('token', user.token);
+            window.electronAPI?.loginWindowCompleted();
+            navigate('/home');
+        } catch (err: any) {
+            if (err?.name === 'AbortError') {
+                setError('Request timed out. Please check the server and try again.');
+            } else {
+                setError(err?.message || 'Failed to login.');
+            }
         }
-        const user = await res.json();
-        localStorage.setItem('token', user.token);
-        window.electronAPI?.loginWindowCompleted();
-        navigate('/home');
     }
 
     return (
         <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>
             <h1 style={{ fontSize: 20, marginBottom: 12 }}>Login</h1>
+            {error && (
+                <ErrorAlert message={error!} onDismiss={() => setError(null)} />
+            )}
             <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
                 <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
                 <button type="submit">Login</button>

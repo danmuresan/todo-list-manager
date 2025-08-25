@@ -61,13 +61,13 @@ type InvokeFnFor<T> = T extends { request: infer R; response: infer S }
 // Utility mapped types
 // Example: RendererAPI<{ ping: void; create: { name: string } }>
 // becomes: { ping: () => void; create: (payload: { name: string }) => void }
-export type RendererAPI<M extends Record<string, unknown>> = {
+export type RendererAPI<M extends object> = {
   [K in keyof M]: SendFn<M[K]>;
 };
 
 // Example: RendererInvokeAPI<{ getVersion: { request: void; response: string } }>
 // becomes: { getVersion: () => Promise<string> }
-export type RendererInvokeAPI<M extends Record<string, { request: unknown; response: unknown }>> = {
+export type RendererInvokeAPI<M> = {
   [K in keyof M]: InvokeFnFor<M[K]>;
 };
 

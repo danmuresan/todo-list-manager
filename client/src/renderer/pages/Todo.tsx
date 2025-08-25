@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import { getHeaders } from '../../utils/header-utils';
+import ErrorAlert from '../components/ErrorAlert';
 
 const {
     host,
@@ -17,6 +18,7 @@ export default function TodoPage() {
     const { listId, todoId } = useParams();
     const [list, setList] = useState<List | null>(null);
     const [todo, setTodo] = useState<Todo | null>(null);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const cachedAuthToken = useMemo(() => localStorage.getItem('token'), []);
@@ -26,28 +28,32 @@ export default function TodoPage() {
             return navigate('/');
         }
         (async () => {
-            if (!listId || !todoId) {
-                return;
+            try {
+                if (!listId || !todoId) {
+                    return;
+                }
+
+                const allTodoLists: List[] = await fetch(
+                    `${host}${todoListsEndpoint}`,
+                    getHeaders(cachedAuthToken)
+                ).then(response => response.json());
+
+                const matchingTodoList = allTodoLists.find(x => x.id === listId) || allTodoLists[0];
+                if (!matchingTodoList) {
+                    return;
+                }
+
+                setList(matchingTodoList);
+
+                const initialTodos: Todo[] = await fetch(
+                    `${host}${todoItemEndpoint(matchingTodoList.id)}`,
+                    getHeaders(cachedAuthToken)
+                ).then(r => r.json());
+
+                setTodo(initialTodos.find(t => t.id === todoId) || null);
+            } catch (e: any) {
+                setError(e?.message || 'Failed to load todo.');
             }
-
-            const allTodoLists: List[] = await fetch(
-                `${host}${todoListsEndpoint}`,
-                getHeaders(cachedAuthToken)
-            ).then(response => response.json());
-
-            const matchingTodoList = allTodoLists.find(x => x.id === listId) || allTodoLists[0];
-            if (!matchingTodoList) {
-                return;
-            }
-
-            setList(matchingTodoList);
-
-            const initialTodos: Todo[] = await fetch(
-                `${host}${todoItemEndpoint(matchingTodoList.id)}`,
-                getHeaders(cachedAuthToken)
-            ).then(r => r.json());
-
-            setTodo(initialTodos.find(t => t.id === todoId) || null);
         })();
     }, [listId, todoId, navigate, cachedAuthToken]);
 
@@ -58,14 +64,18 @@ export default function TodoPage() {
 
         const eventSource = new EventSource(`${host}${todoListUpdatesListenerEndpoint(list.id, cachedAuthToken)}`);
         
-    const onListUpdated = async () => {
-            const todoItems: Todo[] = await fetch(
-                `${host}${todoItemEndpoint(list.id)}`,
-                getHeaders(cachedAuthToken)
-            ).then(r => r.json());
+        const onListUpdated = async () => {
+            try {
+                const todoItems: Todo[] = await fetch(
+                    `${host}${todoItemEndpoint(list.id)}`,
+                    getHeaders(cachedAuthToken)
+                ).then(r => r.json());
 
-            if (todo?.id) {
-                setTodo(todoItems.find(t => t.id === todo.id) || null);
+                if (todo?.id) {
+                    setTodo(todoItems.find(t => t.id === todo.id) || null);
+                }
+            } catch (e: any) {
+                setError(e?.message || 'Failed to refresh todo.');
             }
         };
 
@@ -73,9 +83,12 @@ export default function TodoPage() {
             navigate('/home');
         };
 
+        const onError = () => setError('Realtime connection lost. Retrying…');
+
         eventSource.addEventListener('todoUpdated', onListUpdated);
         eventSource.addEventListener('todoCreated', onListUpdated);
         eventSource.addEventListener('todoDeleted', onListDeleted);
+        eventSource.addEventListener('error', onError as EventListener);
 
         return () => eventSource.close();
     }, [list, cachedAuthToken, todo?.id, navigate]);
@@ -84,19 +97,27 @@ export default function TodoPage() {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
-        await fetch(`${host}${todoItemEndpoint(list.id, todo.id, true)}`, {
-            method: 'POST',
-            ...getHeaders(cachedAuthToken,'application/json'),
-            body: JSON.stringify({ transitionItem })
-        });
+        try {
+            await fetch(`${host}${todoItemEndpoint(list.id, todo.id, true)}`, {
+                method: 'POST',
+                ...getHeaders(cachedAuthToken,'application/json'),
+                body: JSON.stringify({ transitionItem })
+            });
+        } catch (e: any) {
+            setError(e?.message || 'Failed to update todo state.');
+        }
     }
 
     async function deleteTodoItem() {
         if (!list || !todo || !cachedAuthToken) {
             return;
         }
-        await fetch(`${host}${todoItemEndpoint(list.id, todo.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cachedAuthToken}` } });
-        navigate('/home');
+        try {
+            await fetch(`${host}${todoItemEndpoint(list.id, todo.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cachedAuthToken}` } });
+            navigate('/home');
+        } catch (e: any) {
+            setError(e?.message || 'Failed to delete todo.');
+        }
     }
 
     if (!todo) {
@@ -107,6 +128,9 @@ export default function TodoPage() {
         <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
             <button onClick={() => navigate('/home')}>← Back</button>
             <h1 style={{ fontSize: 20 }}>{todo.title}</h1>
+            {error && (
+                <ErrorAlert message={error!} onDismiss={() => setError(null)} />
+            )}
             <p>State: <strong>{todo.state}</strong></p>
             <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => transitionStateForTodoItem('previous')}>Back</button>
