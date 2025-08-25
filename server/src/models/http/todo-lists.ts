@@ -51,3 +51,11 @@ export type JoinTodoListResponse = JoinTodoListSuccessResponsePayload | ErrorRes
  * Response for GET /lists
  */
 export type GetAllTodoListsResponse = TodoList[] | ErrorResponsePayload;
+
+/**
+ * Params for GET /lists/:listId/stream
+ */
+export interface GetTodoListStreamRequestParams {
+    /** The list identifier to open an SSE stream for. */
+    listId: string;
+}

@@ -1,18 +1,23 @@
 import { Router, Request, Response } from 'express';
 import { newId } from '../helpers/id-generator-helper';
-import { createAuthMiddleware, JwtPayload } from '../auth';
+import { createAuthMiddleware } from '../auth';
 import type { AppDependencies } from '../di/di-container';
 import { TodoItem, TodoItemState, TodoItemStateTransition } from '../models/todo-item';
 import type { Router as ExpressRouter } from 'express';
 import { logger } from '../services/logger';
 import type {
     GetTodosResponse,
+    GetTodoItemsRequestParams,
     CreateTodoItemRequestPayload,
     CreateTodoResponse,
+    TransitionTodoItemStateRequestParams,
     TransitionTodoItemStateRequestPayload,
     TransitionTodoItemResponse,
+    DeleteTodoItemRequestParams,
     DeleteTodoResponse,
 } from '../models/http/todo-items';
+import { TODO_ITEM_ROUTES } from './route-paths';
+import type { AuthenticatedRequest } from '../types/authenticated-request';
 
 /**
  * Creates routes for managing todo items.
@@ -44,49 +49,58 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
     }
 
     const auth = createAuthMiddleware(deps.logger);
-    router.use((req, res, next): void => {
-        auth(req as Request & { user?: JwtPayload }, res, next);
-    });
+    router.use(auth);
 
-    router.get('/:listId', (req: Request & { user?: JwtPayload }, res: Response<GetTodosResponse>): Response => {
+    router.get(TODO_ITEM_ROUTES.byList, (req: AuthenticatedRequest<GetTodoItemsRequestParams, GetTodosResponse>, res: Response<GetTodosResponse>): Response => {
         const { listId } = req.params;
         const userId = req.user!.id;
+
         if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
+
         const db = deps.storage.getStorageData();
         const todos = db.todos.filter(t => t.listId === listId);
+
         return res.json(todos);
     });
 
-    router.post('/:listId', (req: Request & { user?: JwtPayload }, res: Response<CreateTodoResponse>): Response => {
+    router.post(TODO_ITEM_ROUTES.create, (req: AuthenticatedRequest<GetTodoItemsRequestParams, CreateTodoResponse, CreateTodoItemRequestPayload>, res: Response<CreateTodoResponse>): Response => {
         const { listId } = req.params;
-        const { title } = (req.body || {}) as CreateTodoItemRequestPayload;
+        const { title } = (req.body || {});
         const userId = req.user!.id;
+
         if (!title) {
             return res.status(400).json({ error: 'Title required' });
         }
+
         if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
+
         const id = newId();
         const now = new Date().toISOString();
         const todo: TodoItem = { id, listId, title, state: TodoItemState.ToDo, createdBy: userId, updatedAt: now };
+        
         deps.storage.updateStorageData((data) => {
             data.todos.push(todo);
             return data;
         });
+        
         deps.sse.broadcast(listId, 'todoCreated', { todo });
+
         return res.status(201).json(todo);
     });
 
-    router.post('/:listId/:todoId/transition', (req: Request & { user?: JwtPayload }, res: Response<TransitionTodoItemResponse>): Response => {
+    router.post(TODO_ITEM_ROUTES.transition, (req: AuthenticatedRequest<TransitionTodoItemStateRequestParams, TransitionTodoItemResponse, TransitionTodoItemStateRequestPayload>, res: Response<TransitionTodoItemResponse>): Response => {
         const { listId, todoId } = req.params;
-    const { transitionItem } = (req.body || {}) as TransitionTodoItemStateRequestPayload;
+        const { transitionItem } = (req.body || {});
         const userId = req.user!.id;
+
         if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
+
         if (!transitionItem || !['next', 'previous'].includes(transitionItem)) {
             return res.status(400).json({ error: 'Invalid transition' });
         }
@@ -98,37 +112,46 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
                 if (!todo) {
                     throw new Error('NotFound');
                 }
+
                 const next = transitionState(todo.state, transitionItem);
                 if (!next || next === todo.state) {
                     throw new Error('NoTransition');
                 }
+
                 todo.state = next;
                 todo.updatedAt = new Date().toISOString();
                 updated = { ...todo };
+
                 return data;
             });
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             logger.error?.('[TodosRouter] transition error:', message);
+
             if (message === 'NotFound') {
                 return res.status(404).json({ error: 'Todo not found' });
             }
+
             if (message === 'NoTransition') {
                 return res.status(400).json({ error: 'No valid transition' });
             }
+
             return res.status(500).json({ error: 'Server error' });
         }
 
         if (!updated) {
             return res.status(404).json({ error: 'Todo not found' });
         }
+
         deps.sse.broadcast(listId, 'todoUpdated', { todo: updated });
+
         return res.json(updated);
     });
 
-    router.delete('/:listId/:todoId', (req: Request & { user?: JwtPayload }, res: Response<DeleteTodoResponse>): Response => {
+    router.delete(TODO_ITEM_ROUTES.delete, (req: AuthenticatedRequest<DeleteTodoItemRequestParams, DeleteTodoResponse>, res: Response<DeleteTodoResponse>): Response => {
         const { listId, todoId } = req.params;
         const userId = req.user!.id;
+
         if (!isMember(listId, userId, deps)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
@@ -136,18 +159,23 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
         let removed = false;
         deps.storage.updateStorageData((data) => {
             const idx = data.todos.findIndex(t => t.id === todoId && t.listId === listId);
+            
             if (idx === -1) {
                 return data;
             }
+
             data.todos.splice(idx, 1);
             removed = true;
+
             return data;
         });
 
         if (!removed) {
             return res.status(404).json({ error: 'Todo not found' });
         }
+
         deps.sse.broadcast(listId, 'todoDeleted', { todoId });
+
         return res.status(204).send();
     });
 

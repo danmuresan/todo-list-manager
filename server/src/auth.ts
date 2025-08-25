@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import type { ILogger } from './services/abstractions/logger-abstraction';
-import type { JwtPayload } from './models/auth/jwt';
-export type { JwtPayload } from './models/auth/jwt';
+import type { JwtPayload } from './models/auth/jwt-payload';
+export type { JwtPayload } from './models/auth/jwt-payload';
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'dev-secret';
 
