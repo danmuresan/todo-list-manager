@@ -52,11 +52,11 @@ export default function createTodosRouter(services: AppDependencies): ExpressRou
         const { listId } = req.params;
         const userId = req.user!.id;
 
-    if (!isMember(listId, userId)) {
+ 		if (!isMember(listId, userId)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
-    const todos = todosRepo.getAll().filter(t => t.listId === listId);
+    	const todos = todosRepo.getAll().filter(t => t.listId === listId);
 
         return res.json(todos);
     });
@@ -70,14 +70,22 @@ export default function createTodosRouter(services: AppDependencies): ExpressRou
             return res.status(400).json({ error: 'Title required' });
         }
 
-    if (!isMember(listId, userId)) {
+    	if (!isMember(listId, userId)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
-    const id = newId();
-    const now = new Date().toISOString();
-    const todo: TodoItem = { id, listId, title, state: TodoItemState.ToDo, createdBy: userId, updatedAt: now };
-    todosRepo.add(todo);
+		const id = newId();
+		const now = new Date().toISOString();
+		const todo: TodoItem = {
+			id,
+			listId,
+			title,
+			state: TodoItemState.ToDo,
+			createdBy: userId,
+			updatedAt: now
+		};
+
+		todosRepo.add(todo);
 
         services.sse.broadcast(listId, 'todoCreated', { todo });
 
@@ -89,7 +97,7 @@ export default function createTodosRouter(services: AppDependencies): ExpressRou
         const { transitionItem } = (req.body || {});
         const userId = req.user!.id;
 
-    if (!isMember(listId, userId)) {
+    	if (!isMember(listId, userId)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
@@ -99,25 +107,34 @@ export default function createTodosRouter(services: AppDependencies): ExpressRou
 
         let updated: TodoItem | undefined;
         try {
-            todosRepo.update((todo) => {
-                if (todo.id !== todoId || todo.listId !== listId) return;
-                const next = transitionState(todo.state, transitionItem);
-                if (!next || next === todo.state) {
-                    throw new Error('NoTransition');
-                }
-                todo.state = next;
-                todo.updatedAt = new Date().toISOString();
-                updated = { ...todo };
-            }, (t) => t.id === todoId && t.listId === listId);
+            todosRepo.update(
+				(todo) => {
+					if (todo.id !== todoId || todo.listId !== listId) {
+						return;
+					}
+					
+					const next = transitionState(todo.state, transitionItem);
+					if (!next || next === todo.state) {
+						throw new Error('NoTransition');
+					}
+
+					todo.state = next;
+					todo.updatedAt = new Date().toISOString();
+					updated = { ...todo };
+				},
+				(todoItem) => todoItem.id === todoId && todoItem.listId === listId);
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             logger.error?.('[TodosRouter] transition error:', message);
+
             if (message === 'NotFound') {
                 return res.status(404).json({ error: 'Todo not found' });
             }
+
             if (message === 'NoTransition') {
                 return res.status(400).json({ error: 'No valid transition' });
             }
+
             return res.status(500).json({ error: 'Server error' });
         }
 
@@ -134,14 +151,14 @@ export default function createTodosRouter(services: AppDependencies): ExpressRou
         const { listId, todoId } = req.params;
         const userId = req.user!.id;
 
-    if (!isMember(listId, userId)) {
+    	if (!isMember(listId, userId)) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
         let removed = false;
-    removed = todosRepo.removeById(todoId);
+		removed = todosRepo.removeById(todoId);
 
-    if (!removed) {
+		if (!removed) {
             return res.status(404).json({ error: 'Todo not found' });
         }
 

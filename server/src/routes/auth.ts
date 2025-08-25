@@ -32,6 +32,7 @@ export default function createAuthRouter(deps: AppDependencies): ReturnType<type
 
             const user: User = { id, username, token };
             deps.usersRepo.add(user);
+			
             return res.json(user);
         } catch (e) {
             const err = e as Error;

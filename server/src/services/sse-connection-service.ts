@@ -21,6 +21,7 @@ class SseConnectionService implements ISseConnectionService {
         if (!this.clientsByList.has(listId)) {
             this.clientsByList.set(listId, new Set());
         }
+
         const set = this.clientsByList.get(listId)!;
         set.add(res);
 
@@ -45,15 +46,17 @@ class SseConnectionService implements ISseConnectionService {
     }
 
     public broadcast<T extends object | Primitive>(listId: string, event: string, payload?: T | T[]): void {
-        const set = this.clientsByList.get(listId);
-        if (!set || set.size === 0) {
+        const clientsList = this.clientsByList.get(listId);
+        if (!clientsList || clientsList.size === 0) {
             return;
         }
+
         const data = JSON.stringify(payload ?? {});
-        for (const res of set) {
+
+        for (const client of clientsList) {
             try {
-                res.write(`event: ${event}\n`);
-                res.write(`data: ${data}\n\n`);
+                client.write(`event: ${event}\n`);
+                client.write(`data: ${data}\n\n`);
             } catch (err) {
                 this.logger.error?.('[SSE] broadcast write error:', (err as Error).message);
             }

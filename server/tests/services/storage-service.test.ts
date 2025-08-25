@@ -20,22 +20,29 @@ describe('storage-service', () => {
     });
 
     test('initializes and persists data', async () => {
+        // Arrange
         const { storageService } = await import('../../src/services/storage-service');
         const first = storageService.getStorageData();
         expect(first.users).toEqual([]);
         expect(first.lists).toEqual([]);
         expect(first.todos).toEqual([]);
 
+        // Act (Add)
         const updated = storageService.updateStorageData((d) => {
             d.lists.push({ id: 'l1', name: 'Team', key: 'abcd', members: [] });
             return d;
         });
+        // Assert (Add)
         expect(updated.lists.length).toBe(1);
 
+        // Act (Get)
         const second = storageService.getStorageData();
+        // Assert (Get)
         expect(second.lists.length).toBe(1);
 
+        // Act (Remove)
         storageService.resetStorageData();
+        // Assert (Remove)
         const reset = storageService.getStorageData();
         expect(reset.lists.length).toBe(0);
     });

@@ -102,19 +102,27 @@ export default function createTodoItemRouter(deps: AppDependencies): ExpressRout
 
         let updated: TodoItem | undefined;
         try {
-            let exists = false;
-            deps.todoItemsRepo.update((todo) => {
-                if (todo.id !== todoId || todo.listId !== listId) return;
-                exists = true;
-                const next = transitionState(todo.state, transitionItem);
-                if (!next || next === todo.state) {
-                    throw new Error('NoTransition');
-                }
-                todo.state = next;
-                todo.updatedAt = new Date().toISOString();
-                updated = { ...todo };
-            }, (t) => t.id === todoId && t.listId === listId);
-            if (!exists) {
+            let todoItemExists = false;
+            deps.todoItemsRepo.update(
+                (todoItem) => {
+                    if (todoItem.id !== todoId || todoItem.listId !== listId) {
+                        return;
+                    }
+
+                    todoItemExists = true;
+                    const next = transitionState(todoItem.state, transitionItem);
+                    
+                    if (!next || next === todoItem.state) {
+                        throw new Error('NoTransition');
+                    }
+
+                    todoItem.state = next;
+                    todoItem.updatedAt = new Date().toISOString();
+                    updated = { ...todoItem };
+                },
+                (todoItem) => todoItem.id === todoId && todoItem.listId === listId);
+                
+            if (!todoItemExists) {
                 throw new Error('NotFound');
             }
         } catch (e) {

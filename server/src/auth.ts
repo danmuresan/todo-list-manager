@@ -28,14 +28,17 @@ export function createAuthMiddleware(logger: ILogger) {
     return function authMiddleware(req: Request & { user?: JwtPayload }, res: Response, next: NextFunction): Response | void {
         const auth = req.headers.authorization || '';
         let token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+
         // Fallback for SSE/EventSource which cannot set headers: allow token as query param
         const query = req.query as { token?: string };
         if (!token && typeof query.token === 'string') {
             token = query.token;
         }
+
         if (!token) {
             return res.status(401).json({ error: 'Missing token' });
         }
+
         try {
             const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
             req.user = decoded;
@@ -46,10 +49,3 @@ export function createAuthMiddleware(logger: ILogger) {
         }
     };
 }
-
-/**
- * Helper to register new user.
- * @param username Username of user to register.
- * @returns User object.
- */
-// NOTE: User registration/authorization logic moved into routes/auth to leverage full DI.
