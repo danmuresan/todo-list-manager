@@ -19,7 +19,7 @@
 export interface RendererToMainAsync {
   setupMainWindowBoundsForLogin: void;
   loginWindowCompleted: void;
-  // createList: { name: string };
+  writeClipboardText: { text: string };
 }
 
 /**
@@ -80,7 +80,8 @@ export type RendererInvokeAPI<M> = {
 export const Channels = {
     rendererToMainAsync: {
         setupMainWindowBoundsForLogin: 'setupMainWindowBoundsForLogin',
-        loginWindowCompleted: 'loginWindowCompleted'
+        loginWindowCompleted: 'loginWindowCompleted',
+		writeClipboardText: 'writeClipboardText'
     	// createList: 'createList'
     },
     renderToMainPromise: {

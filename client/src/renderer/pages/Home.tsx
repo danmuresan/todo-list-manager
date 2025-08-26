@@ -222,8 +222,9 @@ export default function Home() {
                         key={item.id}
                         style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid #ddd' }}
                     >
-                                    <span style={{ cursor: 'pointer' }} onClick={() => navigate(`/todo/${list?.id}/${item.id}`)}>
-                                        {item.title} <span style={{ fontSize: 12, color: '#555' }}>[{stateLabel(item.state)}]</span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => navigate(`/todo/${list?.id}/${item.id}`)}>
+                            {item.title} 
+                            <span style={{ fontSize: 12, color: '#555' }}>[{stateLabel(item.state)}]</span>
                         </span>
                         <span style={{ display: 'flex', gap: 8 }}>
                             {item.state !== 'TODO' && (

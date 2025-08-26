@@ -4,9 +4,9 @@ import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
 import { localize } from '../../localization/i18n';
 
-declare global {
-  interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
-}
+// declare global {
+//   interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
+// }
 
 const { host, authorizeEndpoint } = getDefaultConfig().authService;
 

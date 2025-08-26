@@ -2,17 +2,17 @@
 export function writeTextToClipboard(text: string): boolean {
     try {
         const api = (window as any).electronAPI;
-        const available = !!(api && typeof api.writeText === 'function');
+        const available = !!(api && typeof api.writeClipboardText === 'function');
         if (available) {
             // Debug: trace clipboard usage in renderer
-            console.log('[Renderer] writeTextToClipboard -> calling electronAPI.writeText');
-            api.writeText(text);
+            console.log('[Renderer] writeTextToClipboard -> calling electronAPI.writeClipboardText');
+            api.writeClipboardText({ text });
             return true;
         }
-        console.warn('[Renderer] writeTextToClipboard -> electronAPI.writeText not available');
+        console.warn('[Renderer] writeTextToClipboard -> electronAPI.writeClipboardText not available');
         return false;
-    } catch {
-        console.error('[Renderer] writeTextToClipboard -> unexpected error');
+    } catch (err) {
+        console.error('[Renderer] writeTextToClipboard -> unexpected error', err);
         return false;
     }
 }

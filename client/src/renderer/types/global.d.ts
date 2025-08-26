@@ -4,7 +4,9 @@ import type { RendererToMainAsync, MainToRenderer, RendererAPI } from '../../sha
 
 type RendererBridge = RendererAPI<RendererToMainAsync> & {
   on<K extends keyof MainToRenderer>(channel: K, listener: (payload: MainToRenderer[K]) => void): () => void;
-  writeText: (text: string) => void;
+  setupMainWindowBoundsForLogin: () => void;
+  loginWindowCompleted: () => void;
+  writeClipboardText: ({ text: string }) => void;
 };
 
 declare global {

@@ -8,7 +8,7 @@ let mainWindow: BrowserWindow | null = null;
 // Enable remote debugging for renderer processes so VS Code can attach
 app.commandLine.appendSwitch('remote-debugging-port', '9222');
 
-function createWindow() {
+const createWindow = () => {
     const preloadPath = path.join(__dirname, 'preload.js');
     console.log('[Main] preload path:', preloadPath, 'exists?', fs.existsSync(preloadPath));
     mainWindow = new BrowserWindow({
@@ -18,7 +18,8 @@ function createWindow() {
         webPreferences: {
             preload: preloadPath,
             contextIsolation: true,
-            nodeIntegration: false
+            nodeIntegration: false,
+            sandbox: false
         }
     });
 
@@ -42,6 +43,38 @@ function createWindow() {
     });
 }
 
+const handleWindowBoundsForLoginStarted = () => {
+    console.log('[Main] setupMainWindowBoundsForLogin received');
+	if (!mainWindow) {
+        return;
+    }
+    mainWindow.setResizable(false);
+	mainWindow.setMinimumSize(460, 660);
+    mainWindow.setSize(460, 660);
+    mainWindow.center();
+};
+
+const handleWindowBoundsForLoginCompleted = () => {
+    if (!mainWindow) {
+        return;
+    }
+    console.log('[Main] loginWindowCompleted received');
+    mainWindow.setResizable(true);
+    // Make the main window a bit wider so labels fit comfortably
+    mainWindow.setMinimumSize(800, 600);
+    mainWindow.setSize(960, 720);
+    mainWindow.center();
+};
+
+const onWriteTextToClipboardRequested = (text: string) => {
+    try {
+        clipboard.writeText(text);
+        console.log('[Main] clipboard.writeText success via IPC');
+    } catch (err) {
+        console.error('[Main] clipboard.writeText failed via IPC', err);
+    }
+};
+
 app.whenReady().then(() => {
     createWindow();
 
@@ -58,44 +91,21 @@ app.on('window-all-closed', () => {
     }
 });
 
-ipcMain.on(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin, () => {
-    if (!mainWindow) {
-        return;
-    }
-    mainWindow.setResizable(false);
-    mainWindow.setSize(460, 660);
-    mainWindow.center();
-});
-
-const handleLoginCompleted = () => {
-    if (!mainWindow) {
-        return;
-    }
-    console.log('[Main] loginWindowCompleted received');
-    mainWindow.setResizable(true);
-    // Make the main window a bit wider so labels fit comfortably
-    mainWindow.setMinimumSize(800, 600);
-    mainWindow.setSize(960, 720);
-    mainWindow.center();
-};
-
 // Listen via typed channel name
-ipcMain.on(Channels.rendererToMainAsync.loginWindowCompleted, handleLoginCompleted);
-// Also listen on raw string as a safety net (in case of channel mapping mismatch)
-ipcMain.on('loginWindowCompleted', handleLoginCompleted);
-
-// (no-op helpers currently)
+ipcMain.on(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin, handleWindowBoundsForLoginStarted);
+ipcMain.on(Channels.rendererToMainAsync.loginWindowCompleted, handleWindowBoundsForLoginCompleted);
 
 // Clipboard fallback handler: allows renderer/preload to request a write when direct access fails
-ipcMain.on('writeClipboardText', (_ev, text: unknown) => {
-    if (typeof text !== 'string') {
-        console.warn('[Main] writeClipboardText ignored: payload not a string');
+ipcMain.on(Channels.rendererToMainAsync.writeClipboardText, (_ev, payload: unknown) => {
+    console.log('[Main] writeClipboardText event received:', payload);
+    const text = (payload && typeof payload === 'object' && 'text' in (payload as any))
+        ? String((payload as any).text)
+        : undefined;
+
+    if (!text) {
+        console.warn('[Main] writeClipboardText ignored: invalid payload', payload);
         return;
     }
-    try {
-        clipboard.writeText(text);
-        console.log('[Main] clipboard.writeText success via IPC');
-    } catch (err) {
-        console.error('[Main] clipboard.writeText failed via IPC', err);
-    }
+
+    onWriteTextToClipboardRequested(text);
 });

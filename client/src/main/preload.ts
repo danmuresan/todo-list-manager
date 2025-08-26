@@ -1,48 +1,30 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent, clipboard } from 'electron';
-// Preload startup log to ensure this script actually runs
+import { type RendererToMainAsync, type MainToRenderer, type RendererAPI, Channels } from '../shared/ipc';
+
 console.log('[Preload] script loaded');
-import type { RendererToMainAsync, MainToRenderer, RendererAPI } from '../shared/ipc';
 
-type ExposedAPI = RendererAPI<RendererToMainAsync> & {
-    on<K extends keyof MainToRenderer>(channel: K, listener: (payload: MainToRenderer[K]) => void): () => void;
-    writeText: (text: string) => void;
-};
-
-const CHANNELS = {
-    setupMainWindowBoundsForLogin: 'setupMainWindowBoundsForLogin',
-    loginWindowCompleted: 'loginWindowCompleted',
-	writeClipboardText: 'writeClipboardText'
-} as const;
-
-const api: ExposedAPI = {
+const api: RendererAPI<RendererToMainAsync> = {
     setupMainWindowBoundsForLogin: () => {
         console.log('[Renderer] setupMainWindowBoundsForLogin -> send');
-        ipcRenderer.send(CHANNELS.setupMainWindowBoundsForLogin);
+        ipcRenderer.send(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin);
     },
     loginWindowCompleted: () => {
         console.log('[Renderer] loginWindowCompleted -> send');
-        ipcRenderer.send(CHANNELS.loginWindowCompleted);
+        ipcRenderer.send(Channels.rendererToMainAsync.loginWindowCompleted);
     },
-    writeText: (text: string) => {
+    writeClipboardText: (payload: { text: string }) => {
         try {
             console.log('[Preload] clipboard.writeText invoked');
-            clipboard.writeText(text);
+            clipboard.writeText(payload.text);
             console.log('[Preload] clipboard.writeText success');
         } catch (err) {
             console.error('[Preload] clipboard.writeText failed, falling back to IPC', err);
             try {
-                ipcRenderer.send(CHANNELS.writeClipboardText, text);
+                ipcRenderer.send(Channels.rendererToMainAsync.writeClipboardText, payload);
             } catch (ipcErr) {
                 console.error('[Preload] IPC clipboard fallback failed', ipcErr);
             }
         }
-    },
-    on: (channel, listener) => {
-        const wrapped = (_ev: IpcRendererEvent, payload: unknown) => {
-            listener(payload as MainToRenderer[typeof channel]);
-        };
-        ipcRenderer.on(channel as string, wrapped);
-        return () => ipcRenderer.removeListener(channel as string, wrapped);
     }
 };
 
