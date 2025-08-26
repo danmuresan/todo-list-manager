@@ -2,13 +2,19 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
-import { localize } from '../../localization/i18n';
+import { localize } from '../../localization/localizer';
 
 // declare global {
 //   interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
 // }
 
 const { host, authorizeEndpoint } = getDefaultConfig().authService;
+
+const styles = {
+    container: { padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' },
+    title: { fontSize: 20, marginBottom: 12 },
+    form: { display: 'grid', gap: 8 }
+} as const;
 
 /**
  * User login UI component.
@@ -69,13 +75,15 @@ export default function LoginPage() {
         }
     }, [navigate, username, authorizeEndpoint, host]);
 
+	const handleDismissError = useCallback(() => setError(null), []);
+
     return (
-        <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <h1 style={{ fontSize: 20, marginBottom: 12 }}>{localize('login.title')}</h1>
+        <div style={styles.container}>
+            <h1 style={styles.title}>{localize('login.title')}</h1>
             {error && (
-                <ErrorAlert message={error!} onDismiss={() => setError(null)} />
+                <ErrorAlert message={error!} onDismiss={handleDismissError} />
             )}
-            <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+            <form onSubmit={onSubmit} style={styles.form}>
                 <input placeholder={localize('login.usernamePlaceholder')} value={username} onChange={e => setUsername(e.target.value)} required />
                 <button type="submit">{localize('login.submit')}</button>
             </form>

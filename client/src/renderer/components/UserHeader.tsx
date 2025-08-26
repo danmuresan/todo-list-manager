@@ -1,6 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useCallback } from 'react';
-import { localize } from '../../localization/i18n';
+import { localize } from '../../localization/localizer';
+
+const styles = {
+  container: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  title: { fontSize: 20, margin: 0 },
+  right: { display: 'flex', alignItems: 'center', gap: 12 },
+  username: { color: '#444' }
+} as const;
 
 /**
  * Top-right user header rendering the current username and a Logout button.
@@ -18,11 +25,11 @@ export default function UserHeader({ title }: { title: string }) {
   }, [navigate]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-      <h1 style={{ fontSize: 20, margin: 0 }}>{title}</h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={styles.container}>
+      <h1 style={styles.title}>{title}</h1>
+      <div style={styles.right}>
         {username && (
-          <span title={localize('header.signedInUser.tooltip')} style={{ color: '#444' }}>{localize('header.userPrefix')} {username}</span>
+          <span title={localize('header.signedInUser.tooltip')} style={styles.username}>{localize('header.userPrefix')} {username}</span>
         )}
         <button onClick={logout}>{localize('header.logout')}</button>
       </div>

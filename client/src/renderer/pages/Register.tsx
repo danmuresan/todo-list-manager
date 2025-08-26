@@ -2,9 +2,16 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
-import { localize } from '../../localization/i18n';
+import { localize } from '../../localization/localizer';
 
 const { host, registerEndpoint } = getDefaultConfig().authService;
+
+const styles = {
+    container: { padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' },
+    backButton: { marginBottom: 8 },
+    title: { fontSize: 20, marginBottom: 12 },
+    form: { display: 'grid', gap: 8 }
+} as const;
 
 /**
  * User registration UI component.
@@ -66,13 +73,13 @@ export default function RegisterUserPage() {
     const goBack = useCallback(() => navigate('/'), [navigate]);
 
     return (
-        <div style={{ padding: 16, maxWidth: 400, margin: '0 auto', fontFamily: 'system-ui' }}>
-            <button onClick={goBack} style={{ marginBottom: 8 }}>{localize('register.back')}</button>
-            <h1 style={{ fontSize: 20, marginBottom: 12 }}>{localize('register.title')}</h1>
+        <div style={styles.container}>
+            <button onClick={goBack} style={styles.backButton}>{localize('register.back')}</button>
+            <h1 style={styles.title}>{localize('register.title')}</h1>
             {error && (
                 <ErrorAlert message={error!} onDismiss={handleDismissError} />
             )}
-            <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+            <form onSubmit={onSubmit} style={styles.form}>
                 <input placeholder={localize('register.usernamePlaceholder')} value={username} onChange={e => setUsername((e.target as HTMLInputElement).value)} required />
                 <button type="submit">{localize('register.submit')}</button>
             </form>

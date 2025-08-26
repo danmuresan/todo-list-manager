@@ -5,7 +5,7 @@ import { getHeaders } from '../../utils/header-utils';
 import ErrorAlert from '../components/ErrorAlert';
 import type { TodoItem, TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
-import { localize } from '../../localization/i18n';
+import { localize } from '../../localization/localizer';
 
 const {
     host,
@@ -146,35 +146,42 @@ export default function TodoItemView() {
     }, [list?.id, todo?.id, cachedAuthToken, navigate]);
 
 
-        const handleBack = useCallback(() => {
-            // Navigate back without changing state
-            navigate(list ? `/home/${list.id}` : '/lists');
-        }, [navigate, list?.id]);
+    const handleBack = useCallback(() => {
+        // Navigate back without changing state
+        navigate(list ? `/home/${list.id}` : '/lists');
+    }, [navigate, list?.id]);
 
-        const handlePrevious = useCallback(() => transitionStateForTodoItem('previous'), [transitionStateForTodoItem]);
-        const handleNext = useCallback(() => transitionStateForTodoItem('next'), [transitionStateForTodoItem]);
-    const dismissError = useCallback(() => setError(null), []);
+    const handleUpdateTodoItemToPreviousState = useCallback(() => transitionStateForTodoItem('previous'), [transitionStateForTodoItem]);
+    const handleUpdateTodoItemToNextState = useCallback(() => transitionStateForTodoItem('next'), [transitionStateForTodoItem]);
+    const handleDismissError = useCallback(() => setError(null), []);
+
+    const styles = {
+        container: { padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' },
+        loading: { padding: 16 },
+        title: { fontSize: 20 },
+        actions: { display: 'flex', gap: 8 }
+    } as const;
 
     if (!todo) {
-        return <div style={{ padding: 16 }}>{localize('todoItem.loading')}</div>;
+        return <div style={styles.loading}>{localize('todoItem.loading')}</div>;
     }
 
     return (
-        <div style={{ padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' }}>
+        <div style={styles.container}>
             <button onClick={handleBack}>{localize('todoItem.back')}</button>
-            <h1 style={{ fontSize: 20 }}>{todo.title}</h1>
+            <h1 style={styles.title}>{todo.title}</h1>
             {error && (
-                <ErrorAlert message={error!} onDismiss={dismissError} />
+                <ErrorAlert message={error!} onDismiss={handleDismissError} />
             )}
             <p>{localize('todoItem.state.label')} <strong>{stateLabel(todo.state)}</strong></p>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={styles.actions}>
                 {todo.state !== 'TODO' && (
-                    <button onClick={handlePrevious}>
+                    <button onClick={handleUpdateTodoItemToPreviousState}>
                         {todo.state === 'DONE' ? localize('todo.transition.inProgress') : localize('todo.transition.toBeDone')}
                     </button>
                 )}
                 {todo.state !== 'DONE' && (
-                    <button onClick={handleNext}>
+                    <button onClick={handleUpdateTodoItemToNextState}>
                         {todo.state === 'TODO' ? localize('todo.transition.inProgress') : localize('todo.transition.markDone')}
                     </button>
                 )}

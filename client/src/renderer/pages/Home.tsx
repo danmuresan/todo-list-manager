@@ -7,7 +7,7 @@ import type { TodoItem, TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
 import UserHeader from '../components/UserHeader';
 import { writeTextToClipboard, buildInviteText } from '../../utils/clipboard-utils';
-import { localize } from '../../localization/i18n';
+import { localize } from '../../localization/localizer';
 
 const {
     host,
@@ -15,6 +15,21 @@ const {
     todoListUpdatesListenerEndpoint,
     todoItemEndpoint,
 } = getDefaultConfig().todoListService;
+
+const styles = {
+    container: { padding: 16, maxWidth: 900, margin: '0 auto', fontFamily: 'system-ui' },
+    // Make the add form match the list items' full-width row styling
+    addForm: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, margin: '16px 0', padding: '8px 12px', border: '1px solid #ddd', borderRadius: 8 },
+    addInput: { flex: 1 },
+    listRoot: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 },
+    listItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid #ddd', borderRadius: 8 },
+    itemLabel: { cursor: 'pointer', flex: 1 },
+    itemState: { opacity: 0.7, fontSize: 12 },
+    itemActions: { display: 'flex', gap: 8, marginLeft: 12 },
+    footerWrap: { position: 'sticky', bottom: 0, background: 'white', paddingTop: 12, marginTop: 16 },
+    footer: { display: 'flex', alignItems: 'center', gap: 12 },
+    copiedText: { color: 'green', marginLeft: 8 }
+} as const;
 
 export default function Home() {
     const [list, setList] = useState<TodoList | null>(null);
@@ -196,58 +211,83 @@ export default function Home() {
 
     const openLists = useCallback(() => navigate('/lists'), [navigate]);
 
+    // Render handlers extracted into memoized factories to avoid inline lambdas in JSX
+    const handleOpenTodo = useCallback(
+        (todoId: string) => () => {
+            if (!list?.id) return;
+            navigate(`/todo/${list.id}/${todoId}`);
+        },
+        [navigate, list?.id]
+    );
+
+    const handleTransitionPrev = useCallback(
+        (item: TodoItem) => () => transition(item, 'previous'),
+        [transition]
+    );
+
+    const handleTransitionNext = useCallback(
+        (item: TodoItem) => () => transition(item, 'next'),
+        [transition]
+    );
+
+    const handleDeleteItem = useCallback(
+        (item: TodoItem) => () => deleteTodoItem(item),
+        [deleteTodoItem]
+    );
+
     const dismissError = useCallback(() => setError(null), []);
 
     return (
-        <div style={{ padding: 16, maxWidth: 800, margin: '0 auto', fontFamily: 'system-ui' }}>
+        <div style={styles.container}>
             <UserHeader title={list ? `${list.name} – ${localize('app.title.todos')}` : localize('app.title.todos')} />
             {error && <ErrorAlert message={error} onDismiss={dismissError} />}
 
             <form
                 onSubmit={addTodoItem}
-                style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 16 }}
+                style={styles.addForm}
             >
                 <input
                     placeholder={localize('home.newTodo.placeholder')}
                     value={title}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                    style={styles.addInput}
                     required
                 />
                 <button type="submit">{localize('home.add')}</button>
             </form>
 
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul style={styles.listRoot}>
                 {todos.map((item: TodoItem) => (
                     <li
                         key={item.id}
-                        style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid #ddd' }}
+                        style={styles.listItem}
                     >
-                        <span style={{ cursor: 'pointer' }} onClick={() => navigate(`/todo/${list?.id}/${item.id}`)}>
-                            {item.title} 
-                            <span style={{ fontSize: 12, color: '#555' }}>[{stateLabel(item.state)}]</span>
+                        <span style={styles.itemLabel} onClick={handleOpenTodo(item.id)}>
+                            {item.title} <span style={styles.itemState}>[{stateLabel(item.state)}]</span>
                         </span>
-                        <span style={{ display: 'flex', gap: 8 }}>
+                        <span style={styles.itemActions}>
                             {item.state !== 'TODO' && (
-                                <button onClick={() => transition(item, 'previous')}>
+                                <button onClick={handleTransitionPrev(item)}>
                                     {item.state === 'DONE' ? localize('todo.transition.inProgress') : localize('todo.transition.toBeDone')}
                                 </button>
                             )}
                             {item.state !== 'DONE' && (
-                                <button onClick={() => transition(item, 'next')}>
+                                <button onClick={handleTransitionNext(item)}>
                                     {item.state === 'TODO' ? localize('todo.transition.inProgress') : localize('todo.transition.markDone')}
                                 </button>
                             )}
-                            <button onClick={() => deleteTodoItem(item)}>{localize('todo.delete')}</button>
+                            <button onClick={handleDeleteItem(item)}>{localize('todo.delete')}</button>
                         </span>
                     </li>
                 ))}
             </ul>
 
-            <div style={{ position: 'fixed', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'auto' }}>
+            <div style={styles.footerWrap}>
+                <div style={styles.footer}
+                >
                     <button onClick={openLists}>{localize('home.joinDifferent')}</button>
                     <button onClick={copyInviteLink} disabled={!list}>{localize('home.copyInviteKey')}</button>
-                    {copied && <span style={{ fontSize: 12, color: '#2a7' }}>{localize('home.copied')}</span>}
+                    {copied && <span style={styles.copiedText}>{localize('home.copied')}</span>}
                 </div>
             </div>
         </div>
