@@ -4,10 +4,6 @@ import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
 import { localize } from '../../localization/localizer';
 
-// declare global {
-//   interface Window { electronAPI?: { setupMainWindowBoundsForLogin: () => void; loginWindowCompleted: () => void } }
-// }
-
 const { host, authorizeEndpoint } = getDefaultConfig().authService;
 
 const styles = {

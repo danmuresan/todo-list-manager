@@ -18,7 +18,6 @@ const {
 
 const styles = {
     container: { padding: 16, maxWidth: 900, margin: '0 auto', fontFamily: 'system-ui' },
-    // Make the add form match the list items' full-width row styling
     addForm: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, margin: '16px 0', padding: '8px 12px', border: '1px solid #ddd', borderRadius: 8 },
     addInput: { flex: 1 },
     listRoot: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 },
@@ -67,7 +66,7 @@ export default function Home() {
             return;
         }
 
-        // Enforce lists-first flow: require a listId in the route
+        // Require a listId in the route
         if (!listId) {
             navigate('/lists');
             return;
@@ -211,7 +210,6 @@ export default function Home() {
 
     const openLists = useCallback(() => navigate('/lists'), [navigate]);
 
-    // Render handlers extracted into memoized factories to avoid inline lambdas in JSX
     const handleOpenTodo = useCallback(
         (todoId: string) => () => {
             if (!list?.id) return;

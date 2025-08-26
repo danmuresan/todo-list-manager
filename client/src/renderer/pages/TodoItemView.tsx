@@ -14,8 +14,6 @@ const {
     todoListUpdatesListenerEndpoint,
 } = getDefaultConfig().todoListService;
 
-// shared models used instead of inline types
-
 /**
  * Todo item UI component
  */
@@ -147,7 +145,6 @@ export default function TodoItemView() {
 
 
     const handleBack = useCallback(() => {
-        // Navigate back without changing state
         navigate(list ? `/home/${list.id}` : '/lists');
     }, [navigate, list?.id]);
 
