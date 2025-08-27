@@ -6,6 +6,7 @@ import ErrorAlert from '../components/ErrorAlert';
 import type { TodoItem, TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
 import { localize } from '../../localization/localizer';
+import { routes } from '../models/navigation-routes';
 
 const {
     host,
@@ -13,6 +14,14 @@ const {
     todoListsEndpoint,
     todoListUpdatesListenerEndpoint,
 } = getDefaultConfig().todoListService;
+
+
+const styles = {
+    container: { padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' },
+    loading: { padding: 16 },
+    title: { fontSize: 20 },
+    actions: { display: 'flex', gap: 8 }
+} as const;
 
 /**
  * Todo item UI component
@@ -41,7 +50,7 @@ export default function TodoItemView() {
 
     useEffect(() => {
         if (!cachedAuthToken) {
-            return navigate('/');
+            return navigate(routes.default);
         }
         (async () => {
             try {
@@ -56,7 +65,7 @@ export default function TodoItemView() {
 
                 const matchingTodoList = allTodoLists.find(x => x.id === listId);
                 if (!matchingTodoList) {
-                    navigate('/lists');
+                    navigate(routes.todoLists);
                     return;
                 }
 
@@ -92,7 +101,7 @@ export default function TodoItemView() {
                     const match = todoItems.find(todoItem => todoItem.id === todo.id) || null;
                     setTodo(match);
                     if (!match) {
-                        navigate(`/home/${list.id}`);
+                        navigate(routes.home(list.id));
                     }
                 }
             } catch (e: any) {
@@ -137,7 +146,7 @@ export default function TodoItemView() {
                     method: 'DELETE',
                     ...getHeaders(cachedAuthToken)
                 });
-            navigate(`/home/${list.id}`);
+            navigate(routes.home(list.id));
         } catch (e: any) {
             setError(e?.message || localize('errors.failedDeleteTodo'));
         }
@@ -145,19 +154,12 @@ export default function TodoItemView() {
 
 
     const handleBack = useCallback(() => {
-        navigate(list ? `/home/${list.id}` : '/lists');
+        navigate(list ? routes.home(list.id) : routes.todoLists);
     }, [navigate, list?.id]);
 
     const handleUpdateTodoItemToPreviousState = useCallback(() => transitionStateForTodoItem('previous'), [transitionStateForTodoItem]);
     const handleUpdateTodoItemToNextState = useCallback(() => transitionStateForTodoItem('next'), [transitionStateForTodoItem]);
     const handleDismissError = useCallback(() => setError(null), []);
-
-    const styles = {
-        container: { padding: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'system-ui' },
-        loading: { padding: 16 },
-        title: { fontSize: 20 },
-        actions: { display: 'flex', gap: 8 }
-    } as const;
 
     if (!todo) {
         return <div style={styles.loading}>{localize('todoItem.loading')}</div>;

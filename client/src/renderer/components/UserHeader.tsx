@@ -1,6 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { useCallback } from 'react';
 import { localize } from '../../localization/localizer';
+import { routes } from '../models/navigation-routes';
+
+/**
+ * Props for the UserHeader component.
+ */
+interface UserHeaderProps {
+  /**
+   * The title to display in the header.
+   */
+  title: string;
+}
 
 const styles = {
   container: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
@@ -13,7 +24,7 @@ const styles = {
  * Top-right user header rendering the current username and a Logout button.
  * Also displays a page title on the left.
  */
-export default function UserHeader({ title }: { title: string }) {
+export default function UserHeader({ title }: UserHeaderProps) {
   const navigate = useNavigate();
   const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
 
@@ -21,7 +32,7 @@ export default function UserHeader({ title }: { title: string }) {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     (window as any).electronAPI?.setupMainWindowBoundsForLogin();
-    navigate('/');
+    navigate(routes.default);
   }, [navigate]);
 
   return (

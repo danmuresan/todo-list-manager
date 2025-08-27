@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
 import { localize } from '../../localization/localizer';
+import { routes } from '../models/navigation-routes';
 
 const { host, authorizeEndpoint } = getDefaultConfig().authService;
 
@@ -61,7 +62,7 @@ export default function LoginPage() {
             window.electronAPI?.loginWindowCompleted();
 
 			// navigate to lists management page
-            navigate('/lists');
+            navigate(routes.todoLists);
         } catch (err: any) {
             if (err?.name === 'AbortError') {
                 setError(localize('login.error.timeout'));

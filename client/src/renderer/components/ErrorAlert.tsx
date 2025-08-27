@@ -1,17 +1,36 @@
 import React, { useEffect } from 'react';
 import { localize } from '../../localization/localizer';
+import { ERROR_ALERT_TIMEOUT } from '../models/consts';
 
+/**
+ * Props for the ErrorAlert component.
+ */
 interface ErrorAlertProps {
+    /**
+     * The error message to display.
+     */
     message: string;
+
+    /**
+     * Callback function to call when the alert is dismissed.
+     */
     onDismiss: () => void;
+
+    /**
+     * Optional timeout in milliseconds to automatically dismiss the alert.
+     */
     timeoutMs?: number;
+
+    /**
+     * Optional CSS class name to apply to the alert container.
+     */
     className?: string;
 }
 
 /**
  * Generic error alert banner component (manually and auto-disimissible).
  */
-export const ErrorAlert: React.FC<ErrorAlertProps> = ({ message, onDismiss, timeoutMs = 5000, className }) => {
+export const ErrorAlert: React.FC<ErrorAlertProps> = ({ message, onDismiss, timeoutMs = ERROR_ALERT_TIMEOUT, className }) => {
     useEffect(() => {
         if (timeoutMs <= 0) {
             return;

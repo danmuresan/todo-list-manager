@@ -94,8 +94,6 @@ app.on('window-all-closed', () => {
 // Listen via typed channel name
 ipcMain.on(Channels.rendererToMainAsync.setupMainWindowBoundsForLogin, handleWindowBoundsForLoginStarted);
 ipcMain.on(Channels.rendererToMainAsync.loginWindowCompleted, handleWindowBoundsForLoginCompleted);
-
-// Clipboard fallback handler: allows renderer/preload to request a write when direct access fails
 ipcMain.on(Channels.rendererToMainAsync.writeClipboardText, (_ev, payload: unknown) => {
     console.log('[Main] writeClipboardText event received:', payload);
     const text = (payload && typeof payload === 'object' && 'text' in (payload as any))

@@ -8,6 +8,8 @@ import { getCachedAuthToken } from '../../utils/auth-utils';
 import UserHeader from '../components/UserHeader';
 import { writeTextToClipboard, buildInviteText } from '../../utils/clipboard-utils';
 import { localize } from '../../localization/localizer';
+import { COPIED_TO_CLIPBOARD_ALERT_TIMEOUT } from '../models/consts';
+import { routes } from '../models/navigation-routes';
 
 const {
     host,
@@ -62,13 +64,13 @@ export default function Home() {
         const token = getCachedAuthToken();
 
         if (!token) {
-            navigate('/');
+            navigate(routes.default);
             return;
         }
 
         // Require a listId in the route
         if (!listId) {
-            navigate('/lists');
+            navigate(routes.todoLists);
             return;
         }
 
@@ -85,7 +87,7 @@ export default function Home() {
                     : lists[0] || null);
                 if (!selected) {
                     setError(localize('errors.notMemberOrMissing'));
-                    navigate('/lists');
+                    navigate(routes.todoLists);
                     return;
                 }
 
@@ -202,18 +204,18 @@ export default function Home() {
         const ok = writeTextToClipboard(text);
         if (ok) {
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            setTimeout(() => setCopied(false), COPIED_TO_CLIPBOARD_ALERT_TIMEOUT);
         } else {
             setError(localize('errors.clipboardUnavailable'));
         }
     }, [list?.name, list?.key]);
 
-    const openLists = useCallback(() => navigate('/lists'), [navigate]);
+    const openLists = useCallback(() => navigate(routes.todoLists), [navigate]);
 
     const handleOpenTodo = useCallback(
         (todoId: string) => () => {
             if (!list?.id) return;
-            navigate(`/todo/${list.id}/${todoId}`);
+            navigate(routes.todoItem(list.id, todoId));
         },
         [navigate, list?.id]
     );

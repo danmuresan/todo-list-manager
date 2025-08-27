@@ -4,12 +4,21 @@
  * Invariant: `state` is one of 'TODO' | 'ONGOING' | 'DONE'.
  */
 export interface TodoItem {
-  /** Unique identifier of the todo item */
+  /**
+   * Unique identifier of the todo item
+   */
   id: string;
-  /** The id of the list this todo belongs to */
+
+  /**
+   * The id of the list this todo belongs to
+   */
   listId: string;
-  /** Human friendly title */
+
+  /**
+   * Human friendly title
+   */
   title: string;
+
   /**
    * Current workflow state.
    * - 'TODO'     -> not started
@@ -23,10 +32,18 @@ export interface TodoItem {
  * A collaborative todo list which can be joined via an invite `key`.
  */
 export interface TodoList {
-  /** Unique identifier of the list */
+  /**
+   * Unique identifier of the list
+   */
   id: string;
-  /** Display name */
+
+  /**
+   * Display name
+   */
   name: string;
-  /** Invite key used to join the list */
+
+  /**
+   * Invite key used to join the list
+   */
   key: string;
 }

@@ -7,6 +7,7 @@ import UserHeader from '../components/UserHeader';
 import type { TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
 import { localize } from '../../localization/localizer';
+import { routes } from '../models/navigation-routes';
 
 const { host, todoListsEndpoint } = getDefaultConfig().todoListService;
 
@@ -32,7 +33,7 @@ export default function TodoListsManagementPage() {
     useEffect(() => {
         const token = getCachedAuthToken();
         if (!token) {
-            navigate('/');
+            navigate(routes.default);
             return;
         }
 
@@ -66,7 +67,7 @@ export default function TodoListsManagementPage() {
                 body: JSON.stringify({ name: createName.trim() })
             }).then(response => response.json());
 
-            navigate(`/home/${todoList.id}`);
+            navigate(routes.home(todoList.id));
         } catch (e: any) {
             setError(e?.message || 'Failed to create list.');
         }
@@ -88,13 +89,13 @@ export default function TodoListsManagementPage() {
                 body: JSON.stringify({ key: joinKey.trim() })
             }).then(response => response.json());
 
-            navigate(`/home/${res.id}`);
+            navigate(routes.home(res.id));
         } catch (e: any) {
             setError(e?.message || 'Failed to join list.');
         }
     }, [joinKey, navigate, host, todoListsEndpoint]);
 
-    const openList = useCallback((id: string) => navigate(`/home/${id}`), [navigate]);
+    const openList = useCallback((id: string) => navigate(routes.home(id)), [navigate]);
     const handleDismissError = useCallback(() => setError(null), []);
 
     return (

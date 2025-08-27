@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDefaultConfig } from '../app-configs';
 import ErrorAlert from '../components/ErrorAlert';
 import { localize } from '../../localization/localizer';
+import { routes } from '../models/navigation-routes';
 
 const { host, registerEndpoint } = getDefaultConfig().authService;
 
@@ -59,7 +60,7 @@ export default function RegisterUserPage() {
             window.electronAPI?.loginWindowCompleted();
 
 			// navigate to lists management page
-            navigate('/lists');
+            navigate(routes.todoLists);
         } catch (err: any) {
             if (err?.name === 'AbortError') {
                 setError(localize('register.error.timeout'));
@@ -70,7 +71,7 @@ export default function RegisterUserPage() {
     }, [navigate, username, registerEndpoint, host]);
 
     const handleDismissError = useCallback(() => setError(null), []);
-    const goBack = useCallback(() => navigate('/'), [navigate]);
+    const goBack = useCallback(() => navigate(routes.default), [navigate]);
 
     return (
         <div style={styles.container}>
