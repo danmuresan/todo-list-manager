@@ -23,7 +23,7 @@ import type { AuthenticatedRequest } from '../models/routes/authenticated-reques
  * Creates routes for managing todo items.
  * @param deps service dependencies.
  */
-export default function createTodoItemRouter(deps: AppDependencies): ExpressRouter {
+export default function createTodoItemManagementRouter(deps: AppDependencies): ExpressRouter {
     const router = Router();
 
     /**
