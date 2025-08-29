@@ -7,6 +7,7 @@ import type { TodoItem, TodoList } from '../models/models';
 import { getCachedAuthToken } from '../../utils/auth-utils';
 import { localize } from '../../localization/localizer';
 import { routes } from '../models/navigation-routes';
+import { sseBroadcastEvents } from '../models/sse-broadcast-consts';
 
 const {
     host,
@@ -35,7 +36,7 @@ export default function TodoItemView() {
 
     const cachedAuthToken = useMemo(() => getCachedAuthToken(), []);
 
-    const stateLabel = (state: TodoItem['state']) => {
+    const stateLabel = useCallback((state: TodoItem['state']) => {
         switch (state) {
             case 'TODO':
                 return localize('todo.state.todo');
@@ -46,7 +47,18 @@ export default function TodoItemView() {
             default:
                 return state;
         }
-    };
+    }, []);
+
+    const onAnyListChanged = useCallback(async ( payloadAsJson: string ) => {
+        try {
+            const { todo } = JSON.parse(payloadAsJson);
+            navigate(routes.home(todo?.listId ?? listId));
+        } catch (e: any) {
+            setError(e?.message || localize('errors.failedRefreshTodo'));
+        }
+    }, []);
+
+    const onError = useCallback(() => setError(localize('errors.realtimeLost')), []);
 
     useEffect(() => {
         if (!cachedAuthToken) {
@@ -89,32 +101,10 @@ export default function TodoItemView() {
         }
 
         const eventSource = new EventSource(`${host}${todoListUpdatesListenerEndpoint(list.id, cachedAuthToken)}`);
-        
-        const onAnyListChange = async () => {
-            try {
-                const todoItems: TodoItem[] = await fetch(
-                    `${host}${todoItemEndpoint(list.id)}`,
-                    getHeaders(cachedAuthToken)
-                ).then(response => response.json());
-
-                if (todo?.id) {
-                    const match = todoItems.find(todoItem => todoItem.id === todo.id) || null;
-                    setTodo(match);
-                    if (!match) {
-                        navigate(routes.home(list.id));
-                    }
-                }
-            } catch (e: any) {
-                setError(e?.message || localize('errors.failedRefreshTodo'));
-            }
-        };
-
-    const onError = () => setError(localize('errors.realtimeLost'));
-        eventSource.addEventListener('todoUpdated', onAnyListChange);
-        eventSource.addEventListener('todoCreated', onAnyListChange);
-        eventSource.addEventListener('todoDeleted', onAnyListChange);
+        eventSource.addEventListener(sseBroadcastEvents.TODO_UPDATED, (event) => onAnyListChanged(event.data));
+        eventSource.addEventListener(sseBroadcastEvents.TODO_CREATED, (event) => onAnyListChanged(event.data));
+        eventSource.addEventListener(sseBroadcastEvents.TODO_DELETED, (event) => onAnyListChanged(event.data));
         eventSource.addEventListener('error', onError as EventListener);
-
         return () => eventSource.close();
     }, [list, cachedAuthToken, todo?.id, navigate]);
 

@@ -10,6 +10,7 @@ import { writeTextToClipboard, buildInviteText } from '../../utils/clipboard-uti
 import { localize } from '../../localization/localizer';
 import { COPIED_TO_CLIPBOARD_ALERT_TIMEOUT } from '../models/consts';
 import { routes } from '../models/navigation-routes';
+import { sseBroadcastEvents } from '../models/sse-broadcast-consts';
 
 const {
     host,
@@ -41,7 +42,7 @@ export default function Home() {
     const navigate = useNavigate();
     const { listId } = useParams();
 
-    const stateLabel = (state: TodoItem['state']) => {
+    const stateLabel = useCallback((state: TodoItem['state']) => {
         switch (state) {
             case 'TODO':
                 return localize('todo.state.todo');
@@ -52,7 +53,37 @@ export default function Home() {
             default:
                 return state;
         }
-    };
+    }, []);
+
+    const onReloadRequested = useCallback(async (payloadAsJson: string) => {
+        try {
+            const { todo } = JSON.parse(payloadAsJson);
+            const { todoId: deleteTodoItemId } = JSON.parse(payloadAsJson);
+            const wasDeleted = deleteTodoItemId !== undefined;
+            setTodos((prevTodos) => {
+                if (wasDeleted) {
+                    return prevTodos.filter(t => t.id !== deleteTodoItemId);
+                }
+
+                if (!todo) {
+                    return prevTodos;
+                }
+                
+                const index = prevTodos.findIndex(t => t.id === todo.id);
+                if (index !== -1) {
+                    const newTodos = [...prevTodos];
+                    newTodos[index] = todo;
+                    return newTodos;
+                } else {
+                    return [...prevTodos, todo];
+                }
+            });
+        } catch (e: any) {
+            setError(e?.message || localize('errors.failedRefreshTodos'));
+        }
+    }, []);
+
+    const onError = useCallback(() => setError(localize('errors.realtimeLost')), []);
 
     // After navigating to Home (post-login), ensure the main window is resized/widened
     useEffect(() => {
@@ -118,26 +149,11 @@ export default function Home() {
         const eventSource = new EventSource(
             `${host}${todoListUpdatesListenerEndpoint(list.id, token)}`
         );
-
-        const onReloadRequested = async () => {
-            try {
-                const data = await fetch(
-                    `${host}${todoItemEndpoint(list.id)}`,
-                    getHeaders(token)
-                ).then((response) => response.json());
-
-                setTodos(data);
-            } catch (e: any) {
-                setError(e?.message || localize('errors.failedRefreshTodos'));
-            }
-        };
-
-    const onError = () => setError(localize('errors.realtimeLost'));
-        eventSource.addEventListener('todoCreated', onReloadRequested);
-        eventSource.addEventListener('todoUpdated', onReloadRequested);
-        eventSource.addEventListener('todoDeleted', onReloadRequested);
+        
+        eventSource.addEventListener(sseBroadcastEvents.TODO_CREATED, (event) => onReloadRequested(event.data));
+        eventSource.addEventListener(sseBroadcastEvents.TODO_UPDATED, (event) => onReloadRequested(event.data));
+        eventSource.addEventListener(sseBroadcastEvents.TODO_DELETED, (event) => onReloadRequested(event.data));
         eventSource.addEventListener('error', onError as EventListener);
-
         return () => eventSource.close();
     }, [list]);
 

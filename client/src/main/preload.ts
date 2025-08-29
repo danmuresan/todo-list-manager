@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent, clipboard } from 'electron';
-import { type RendererToMainAsync, type MainToRenderer, type RendererAPI, Channels } from '../shared/ipc';
+import { contextBridge, ipcRenderer, clipboard } from 'electron';
+import { type RendererToMainAsync, type RendererAPI, Channels } from '../shared/ipc';
 
 console.log('[Preload] script loaded');
 

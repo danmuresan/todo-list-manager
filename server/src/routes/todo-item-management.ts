@@ -18,6 +18,7 @@ import type {
 } from '../models/api/todo-items';
 import { TODO_ITEM_ROUTES } from './route-paths';
 import type { AuthenticatedRequest } from '../models/routes/authenticated-request';
+import { sseBroadcastPaths } from './sse-broadcast-paths';
 
 /**
  * Creates routes for managing todo items.
@@ -82,7 +83,7 @@ export default function createTodoItemManagementRouter(deps: AppDependencies): E
         
         deps.todoItemsRepo.add(todo);
 
-        deps.sse.broadcast(listId, 'todoCreated', { todo });
+        deps.sse.broadcast(listId, sseBroadcastPaths.TODO_CREATED, { todo });
 
         return res.status(201).json(todo);
     });
